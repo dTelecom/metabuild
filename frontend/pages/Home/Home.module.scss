@@ -1,0 +1,85 @@
+.title {
+	margin-top: 24px;
+	margin-bottom: 40px;
+	white-space: pre;
+	text-align: center;
+
+	@media (min-width: 900px) {
+		text-align: left;
+		margin-top: 96px;
+	}
+}
+
+.subtitle {
+	text-align: center;
+
+	@media (min-width: 900px) {
+		text-align: left;
+	}
+}
+
+.greyText {
+	font-weight: 500;
+	font-size: 12px;
+	line-height: 15px;
+	color: #8C8C8C;
+	text-align: center;
+
+	@media (min-width: 900px) {
+		text-align: left;
+		font-size: 16px;
+		line-height: 19px;
+	}
+}
+
+.cardsContainer {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 16px;
+	margin-bottom: 40px;
+	justify-content: center;
+
+	@media (min-width: 900px) {
+		gap: 16px;
+		margin-top: 24px;
+		margin-bottom: 59px;
+		justify-content: initial;
+	}
+
+	& > div {
+		width: calc(50% - 16px);
+		text-align: center;
+		max-width: 167px;
+
+		@media (min-width: 900px) {
+			max-width: initial;
+			text-align: initial;
+			width: auto;
+		}
+	}
+
+}
+
+.buttonsContainer {
+	margin-top: 16px;
+	display: flex;
+	height: 42px;
+	gap: 16px;
+	justify-content: center;
+
+	@media (min-width: 900px) {
+		justify-content: initial;
+		height: 62px;
+		gap: 32px;
+	}
+
+	button {
+		width: 232px;
+		max-width: 163px;
+
+		@media (min-width: 900px) {
+			max-width: initial;
+		}
+	}
+}

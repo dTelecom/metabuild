@@ -1,0 +1,17 @@
+client/gopath/
+client/main
+client/pkg/
+client/sqlite3gorm.db
+sfu/gopath/
+sfu/pkg/
+sfu/main
+contract/target/
+frontend/.cache/
+frontend/dist/
+frontend/node_modules/
+frontend/yarn-error.log
+client/frontend/.cache/
+client/frontend/dist/
+client/frontend/node_modules/
+.idea
+.DS_store

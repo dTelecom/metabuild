@@ -1,0 +1,17 @@
+.container {
+	display: flex;
+	justify-content: center;
+	min-height: calc(100% - 72px - 48px);
+	padding: 0 24px;
+
+	@media (min-width: 900px) {
+		padding: 0 64px;
+		min-height: calc(100vh - 96px - 65px);
+	}
+
+	.content {
+		margin: 0 auto;
+		max-width: 1600px;
+		width: 100%;
+	}
+}

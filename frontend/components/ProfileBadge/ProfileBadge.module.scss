@@ -1,0 +1,58 @@
+.badge {
+	display: flex;
+	gap: 8px;
+
+	.accountBadge {
+		background: #2B2B2B;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		padding: 5.5px 8px;
+		gap: 8px;
+		font-weight: 600;
+		font-size: 12px;
+		line-height: 15px;
+
+		img {
+			height: 12px;
+			width: 12px;
+		}
+
+		@media (min-width: 900px) {
+			padding: 8px 16px;
+			font-weight: 500;
+			font-size: 16px;
+			line-height: 19px;
+
+			img {
+				height: 16px;
+				width: 16px;
+			}
+		}
+	}
+
+	.logOutButton {
+		background: #2B2B2B;
+		border-radius: 10px;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 28px;
+		width: 28px;
+
+		img {
+			height: 12px;
+			width: 12px;
+		}
+
+		@media (min-width: 900px) {
+			height: 36px;
+			width: 36px;
+
+			img {
+				height: 16px;
+				width: 16px;
+			}
+		}
+	}
+}

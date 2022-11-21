@@ -1,0 +1,25 @@
+.container {
+	height: 46px;
+	align-items: center;
+	border-top: 2px solid #161F41;
+	gap: 8px;
+	width: 100%;
+
+	@media (min-width: 900px) {
+		height: 63px;
+	}
+
+	.text {
+		font-weight: 400;
+		font-size: 14px;
+		line-height: 17px;
+		color: #D5D4D8;
+	}
+
+	img {
+		height: 15px;
+		@media (min-width: 900px) {
+			height: 17px;
+		}
+	}
+}

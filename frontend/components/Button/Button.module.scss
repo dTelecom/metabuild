@@ -1,0 +1,21 @@
+.button {
+	height: 100%;
+	max-height: 62px;
+	background: #59E970;
+	border-radius: 10px;
+	font-weight: 700;
+	color: #252728;
+	width: 100%;
+	font-size: 14px;
+	line-height: 17px;
+
+	@media (min-width: 900px) {
+		font-size: 18px;
+		line-height: 22px;
+	}
+
+	&:disabled {
+		background: #FFFFFF;
+		opacity: 0.1;
+	}
+}

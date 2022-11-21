@@ -1,0 +1,36 @@
+.connectWalletButtonOuter {
+	cursor: pointer;
+	border-radius: 10px;
+	padding: 2px;
+	background: linear-gradient(to right, #2DFF73, #fff);
+
+	.connectWalletButtonInner {
+		background: #000;
+		font-weight: 700;
+
+		border-radius: 10px;
+		padding: 6px 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 14px;
+		line-height: 17px;
+
+		@media (min-width: 900px) {
+			padding: 11px 22px;
+			font-size: 18px;
+			line-height: 22px;
+		}
+
+		img {
+			margin-left: 10px;
+			width: 16px;
+			height: 16px;
+
+			@media (min-width: 900px) {
+				width: initial;
+				height: initial;
+			}
+		}
+	}
+}

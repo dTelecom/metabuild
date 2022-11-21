@@ -1,0 +1,36 @@
+.container {
+	height: 72px;
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	padding: 0 24px;
+
+	@media (min-width: 900px) {
+		height: 96px;
+		padding: 0 64px;
+	}
+
+	&.containerCentered {
+		justify-content: center;
+		@media (min-width: 900px) {
+			justify-content: flex-start;
+		}
+	}
+
+	.logoContainer {
+		display: flex;
+
+		img {
+			height: 40px;
+
+			@media (min-width: 900px) {
+				height: 48px;
+			}
+		}
+	}
+
+	.controlContainer {
+		display: flex;
+		justify-content: flex-end;
+	}
+}

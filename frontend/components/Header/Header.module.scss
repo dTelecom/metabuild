@@ -1,0 +1,106 @@
+.container {
+	min-height: 61px;
+	padding: 0 24px;
+	align-items: center;
+	display: flex;
+	justify-content: space-between;
+	flex-wrap: wrap;
+
+	@media (min-width: 900px) {
+		flex-wrap: initial;
+		height: 88px;
+		padding: 0 64px;
+	}
+
+	&.containerWithTitle {
+		flex-wrap: wrap;
+		height: calc(61px + 16px + 22px);
+
+		> div {
+			width: 50%;
+		}
+
+		@media (min-width: 1250px) {
+			> div {
+				width: 33.3%;
+			}
+		}
+	}
+
+	.logoContainer {
+		display: flex;
+
+		img {
+			height: 18px;
+			margin-right: 15px;
+
+			@media (min-width: 900px) {
+				height: 42px;
+			}
+		}
+	}
+
+	.backContainer {
+		display: flex;
+		gap: 16px;
+		align-items: center;
+		justify-content: center;
+
+		&.backContainerMobile {
+			margin-top: auto;
+			display: flex;
+			width: 100%;
+			@media (min-width: 1250px) {
+				display: none;
+			}
+		}
+
+		&.backContainerDesktop {
+			display: none;
+			@media (min-width: 1250px) {
+				display: flex;
+			}
+		}
+
+		.backButton {
+			border: 0.888889px solid rgba(140, 140, 140, 0.3);
+			border-radius: 6.66667px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 22px;
+			height: 22px;
+
+			@media (min-width: 900px) {
+				width: 32px;
+				height: 32px;
+			}
+		}
+
+		.backTitle {
+			font-family: 'Roboto', 'Inter', sans-serif;
+			font-style: normal;
+			font-weight: 600;
+			text-align: center;
+			letter-spacing: 0.2em;
+			color: #2DFF73;
+			font-size: 14px;
+			line-height: 22px;
+
+			@media (min-width: 900px) {
+				font-size: 20px;
+				line-height: 23px;
+			}
+		}
+	}
+
+	.controlContainer {
+		display: flex;
+		justify-content: flex-end;
+		//height: 28px;
+
+		@media (min-width: 900px) {
+			height: auto;
+		}
+	}
+}

@@ -1,0 +1,43 @@
+.container {
+	display: flex;
+	gap: 12px;
+	justify-content: center;
+	height: 40px;
+
+	@media (min-width: 900px) {
+		gap: 16px;
+	}
+
+	.participants {
+		display: block;
+		margin-right: auto;
+
+		@media (min-width: 900px) {
+			display: none;
+		}
+	}
+
+	.hangup {
+		background: #B30E0E;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 16px;
+		gap: 8px;
+		font-weight: 700;
+		font-size: 14px;
+		line-height: 17px;
+		border-radius: 15px;
+		@media (min-width: 900px) {
+			border-radius: 40px;
+		}
+
+		span {
+			display: none;
+
+			@media (min-width: 900px) {
+				display: block;
+			}
+		}
+	}
+}

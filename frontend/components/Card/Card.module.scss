@@ -1,0 +1,38 @@
+.container {
+	background: #000;
+	border: 1px solid rgba(140, 140, 140, 0.3);
+	border-radius: 10px;
+	padding: 20px 24px;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+
+	@media (min-width: 900px) {
+		min-width: 232px;
+	}
+
+	.title {
+		font-weight: 500;
+		font-size: 16px;
+		line-height: 19px;
+		color: #59E970;
+		margin-bottom: 4px;
+	}
+
+	.text {
+		font-weight: 700;
+		font-size: 32px;
+		line-height: 39px;
+	}
+
+	img {
+		opacity: 0.1;
+		position: absolute;
+		top: 24px;
+		right: -8px;
+		width: 62px;
+		height: 62px;
+	}
+}
