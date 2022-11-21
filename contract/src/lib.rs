@@ -404,6 +404,77 @@ mod tests {
         );
     }
 
+    #[test]
+    #[should_panic]
+    fn call_double_spend() {
+        let mut contract = Contract::init("dtelecom".parse().unwrap());
+
+        let keypair: Keypair = prepare_keypair();
+
+        set_context("client_a", 1 * NEAR, 1);
+        contract.add_balance();
+
+        set_context("mainer_a", 10 * NEAR, 1);
+        contract.add_node("https://example.com/".to_string());
+
+        let signature1 = keypair.sign(b"123:0");
+        contract.create_call(
+            "123".to_string(),
+            "client_a".to_string(),
+            bs58::encode(signature1).into_string(),
+        );
+
+        let signature2 = keypair.sign(b"123:100");
+        contract.end_call(
+            "123".to_string(),
+            "client_a".to_string(),
+            100,
+            bs58::encode(signature2).into_string(),
+        );
+        assert_eq!(contract.balance, 485_000_000_000_000_000_000_00);
+
+        contract.create_call(
+            "123".to_string(),
+            "client_a".to_string(),
+            bs58::encode(signature1).into_string(),
+        );
+    }
+
+    #[test]
+    fn call_fine() {
+        let mut contract = Contract::init("dtelecom".parse().unwrap());
+
+        let keypair: Keypair = prepare_keypair();
+
+        set_context("client_a", 1 * NEAR, 1);
+        contract.add_balance();
+
+        set_context("mainer_a", 10 * NEAR, 1);
+        contract.add_node("https://example.com/".to_string());
+
+        let signature1 = keypair.sign(b"123:0");
+        contract.create_call(
+            "123".to_string(),
+            "client_a".to_string(),
+            bs58::encode(signature1).into_string(),
+        );
+
+        let signature2 = keypair.sign(b"123:100");
+        contract.end_call(
+            "123".to_string(),
+            "client_a".to_string(),
+            100,
+            bs58::encode(signature2).into_string(),
+        );
+
+        set_context("dtelecom", 0 * NEAR, 1);
+        contract.fine_recent_call("123".to_string(), 1_000_000_000_000_000_000_000_000);
+
+        let node = contract.get_node("mainer_a".parse().unwrap()).unwrap();
+
+        assert_eq!(node.staked_amount, 9_000_000_000_000_000_000_000_000);
+    }
+
     fn prepare_keypair() -> Keypair {
         let secret_key: &[u8] = b"833fe62409237b9d62ec77587520911e9a759cec1d19755b7da901b96dca3d42";
         let public_key: &[u8] = b"ec172b93ad5e563bf4932c70e1245034c35467ef2efd4d64ebf819683467e2bf";

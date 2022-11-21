@@ -22,8 +22,11 @@ impl Contract {
 
         require!(node.staked_amount == STAKE_AMOUNT, "Not enough staked");
 
-        let previous = self.active_calls.get(&id);
-        assert!(previous.is_none() == true, "Call exist");
+        let previous_active = self.active_calls.get(&id);
+        assert!(previous_active.is_none() == true, "Call exist");
+
+        let previous_recent = self.get_recent_call(id.clone());
+        assert!(previous_recent.is_none() == true, "Call exist");
 
         let client_account: AccountId = client_id.parse().unwrap();
         assert!("invalid.".parse::<AccountId>().is_err());
@@ -165,20 +168,7 @@ impl Contract {
             near_sdk::env::panic_str("Method method is private");
         }
 
-        let call0 = self.recent_calls_0.get(&id);
-        let call1 = self.recent_calls_1.get(&id);
-
-        if call0.is_none() {
-            if call1.is_none() {
-                near_sdk::env::panic_str("Call not found");
-            }
-        }
-
-        let call: Call = if call0.is_none() {
-            call1.unwrap()
-        } else {
-            call0.unwrap()
-        };
+        let call = self.get_recent_call(id).unwrap_or_else(|| env::panic_str("Call not found"));
 
         let mut node = expect_token_found(self.nodes.get(&call.node_id));
         let mut client = expect_token_found(self.clients.get(&call.client_id));
@@ -202,5 +192,18 @@ impl Contract {
 
     pub fn get_recent_calls_1(&self) -> Vec<Call> {
         self.recent_calls_1.values().collect()
+    }
+
+    fn get_recent_call(&mut self, id: String) -> Option<Call> {
+        let call0 = self.recent_calls_0.get(&id);
+        if call0.is_none() == false {
+            return call0;
+        } else {
+            let call1 = self.recent_calls_1.get(&id);
+            if call1.is_none() == false {
+                return call1;
+            }
+        }
+        None
     }
 }
