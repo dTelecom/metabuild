@@ -29,7 +29,6 @@
 	padding: 12px 12px 24px;
 
 	@media (min-width: 900px) {
-		aspect-ratio: initial;
 		max-width: initial;
 		min-width: initial;
 		width: 728px;
@@ -43,10 +42,6 @@
 		overflow: hidden;
 		flex: 1;
 		border-radius: 10px;
-
-		@media (min-width: 900px) {
-			aspect-ratio: 640/480;
-		}
 
 		video {
 			border-radius: 10px;
