@@ -130,74 +130,76 @@ const Home = ({isJoin}) => {
   const title = isJoin ? decodeURIComponent(participants[0]?.name) + '\ninvites you' : 'Try one click\nmeeting'
   const buttonText = isJoin ? 'Join meeting' : 'Create a meeting'
 
-  return <>
-    <Header centered/>
+  return (
+    <>
+      <Header centered/>
 
-    <Container>
-      <Flex
-        width={'100%'}
-        className={styles.container}
-      >
-        <div className={styles.videoContainer}>
-          <div ref={videoContainer}/>
+      <Container>
+        <Flex
+          width={'100%'}
+          className={styles.container}
+        >
+          <div className={styles.videoContainer}>
+            <div ref={videoContainer}/>
 
-          <div className={styles.videoControls}>
-            <VideoControls
-              devices={devices}
-              videoEnabled={callState.video}
-              audioEnabled={callState.audio}
-              onDeviceChange={onDeviceChange}
-              toggleAudio={toggleAudio}
-              toggleVideo={toggleVideo}
-              selectedVideoId={callState.video.exact}
-              selectedAudioId={callState.audio.exact}
-            />
-          </div>
-        </div>
-
-        <Flex>
-          <Flex
-            className={styles.joinContainer}
-          >
-            <h1 className={styles.title}>{title}</h1>
-            <p className={styles.label}>Enter your name:</p>
-
-            <Input
-              value={name}
-              onChange={setName}
-            />
-
-            <Box
-              mt={'16px'}
-              width={'100%'}
-              boxSizing={'border-box'}
-              className={styles.buttonContainer}
-            >
-              <Button
-                onClick={() => navigate(isJoin ? '/call/' + sid : '/call', {state: {name, callState}})}
-                text={buttonText}
-                disabled={disabled}
+            <div className={styles.videoControls}>
+              <VideoControls
+                devices={devices}
+                videoEnabled={callState.video}
+                audioEnabled={callState.audio}
+                onDeviceChange={onDeviceChange}
+                toggleAudio={toggleAudio}
+                toggleVideo={toggleVideo}
+                selectedVideoId={callState.video.exact}
+                selectedAudioId={callState.audio.exact}
               />
-            </Box>
+            </div>
+          </div>
 
-            {isJoin ? (
-              <div className={styles.inviteText}>
-                <span>At the meeting</span><ParticipantsBadge count={participants?.length}/>participants
-              </div>
-            ) : (
-              <p className={styles.text}>
-                {'Meeting time limit is 30 minutes. \n' +
-                  'The number of participants is up to 10 people.'}
-              </p>
-            )}
+          <Flex>
+            <Flex
+              className={styles.joinContainer}
+            >
+              <h1 className={styles.title}>{title}</h1>
+              <p className={styles.label}>Enter your name:</p>
+
+              <Input
+                value={name}
+                onChange={setName}
+                placeholder={'John'}
+              />
+
+              <Box
+                mt={'16px'}
+                width={'100%'}
+                boxSizing={'border-box'}
+                className={styles.buttonContainer}
+              >
+                <Button
+                  onClick={() => navigate(isJoin ? '/call/' + sid : '/call', {state: {name, callState}})}
+                  text={buttonText}
+                  disabled={disabled}
+                />
+              </Box>
+
+              {isJoin ? (
+                <div className={styles.inviteText}>
+                  <span>At the meeting</span><ParticipantsBadge count={participants?.length}/>participants
+                </div>
+              ) : (
+                <p className={styles.text}>
+                  {'Meeting time limit is 30 minutes. \n' +
+                    'The number of participants is up to 10 people.'}
+                </p>
+              )}
+            </Flex>
           </Flex>
         </Flex>
-      </Flex>
+      </Container>
 
-    </Container>
-
-    <Footer/>
-  </>
+      <Footer/>
+    </>
+  )
 }
 
 export default observer(Home)

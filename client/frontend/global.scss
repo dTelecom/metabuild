@@ -20,13 +20,9 @@ body {
 	@supports (-webkit-touch-callout: none) {
 		min-height: -webkit-fill-available;
 	}
-	//min-height: -webkit-fill-available;
+
 	display: flex;
 	flex-direction: column;
-
-	@media (min-width: 900px) {
-		height: 100vh;
-	}
 }
 
 input {

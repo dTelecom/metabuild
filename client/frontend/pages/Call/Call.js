@@ -40,7 +40,7 @@ const Call = () => {
   const [callState, setCallState] = useState(location.state?.callState || {audio: true, video: true})
   const localMedia = useRef()
   const timer = useRef()
-  const streamRef = useRef()
+  const streamRef = useRef({})
 
   useEffect(() => {
     return () => {
@@ -175,8 +175,8 @@ const Call = () => {
       audio: true,
       // codec: params.has('codec') ? params.get('codec') : 'vp8',
       codec: 'vp8',
-      sendEmptyOnMute: true,
-    }).then((media) => {
+      sendEmptyOnMute: false,
+    }).then(async (media) => {
       loadDevices()
       localMedia.current = media
       if (callState.audio?.exact) {
@@ -194,21 +194,24 @@ const Call = () => {
 
       clientLocal.current.publish(media)
 
-      if (callState.audio === false) {
-        media.mute('audio')
-        showMutedBadge('audio', media.id)
-      } else {
-        hideMutedBadge('audio', media.id)
-      }
-
-      if (callState.video === false) {
-        media.mute('video')
-        showMutedBadge('video', media.id)
-      } else {
-        hideMutedBadge('video', media.id)
-      }
-
       setLoading(false)
+
+      setTimeout(() => {
+        if (callState.audio === false) {
+          media.mute('audio')
+          console.log('mute')
+          showMutedBadge('audio', media.id)
+        } else {
+          hideMutedBadge('audio', media.id)
+        }
+
+        if (callState.video === false) {
+          media.mute('video')
+          showMutedBadge('video', media.id)
+        } else {
+          hideMutedBadge('video', media.id)
+        }
+      }, 0)
     })
       .catch(console.error);
   };
@@ -232,48 +235,68 @@ const Call = () => {
     }
   }, [callState])
 
-  return <>
-    <Header>
-      <Flex
-        className={styles.headerControls}
-        gap={'16px'}
-      >
-        <ParticipantsBadge count={participants?.length}/>
-        <CopyToClipboard
-          onCopy={onCopy}
-          text={inviteLink}
-        >
-          <button className={styles.inviteButton}>
-            <img src={copied ? WhiteTickIcon : ChainIcon}/>
-            {copied ? 'Copied!' : 'Copy invite link'}
-          </button>
-        </CopyToClipboard>
-      </Flex>
-    </Header>
-
-    <Container
-      containerClass={styles.callContainer}
-      contentClass={styles.callContentContainer}
+  return (
+    <Box
+      className={styles.container}
     >
-
-      {isMobile ? (
+      <Header>
         <Flex
-          minHeight={'calc(100% - 72px)'}
-          flexDirection={'row'}
-          flexWrap={'wrap'}
-          gap={'8px'}
-          overflowY={participants.length === 1 ? 'initial' : 'auto'}
-          justifyContent={'space-between'}
+          className={styles.headerControls}
+          gap={'16px'}
         >
-          {participants.map((participant, index) => (
-            <Box
-              key={participant.streamID}
-              maxHeight={participants.length === 1 ? 'auto' : 'calc((100vh - 72px - 48px - 88px) / 2)'}
-              width={participants.length === 1 ? '100%' : 'calc(50% - 8px)'}
-              style={{
-                aspectRatio: 480 / 640
-              }}
-            >
+          <ParticipantsBadge count={participants?.length}/>
+          <CopyToClipboard
+            onCopy={onCopy}
+            text={inviteLink}
+          >
+            <button className={styles.inviteButton}>
+              <img src={copied ? WhiteTickIcon : ChainIcon}/>
+              {copied ? 'Copied!' : 'Copy invite link'}
+            </button>
+          </CopyToClipboard>
+        </Flex>
+      </Header>
+
+      <Container
+        containerClass={styles.callContainer}
+        contentClass={styles.callContentContainer}
+      >
+
+        {isMobile ? (
+          <Flex
+            minHeight={'calc(100% - 72px)'}
+            flexDirection={'row'}
+            flexWrap={'wrap'}
+            gap={'8px'}
+            overflowY={participants.length === 1 ? 'initial' : 'auto'}
+            justifyContent={'space-between'}
+          >
+            {participants.map((participant, index) => (
+              <Box
+                key={participant.streamID}
+                maxHeight={participants.length === 1 ? 'auto' : 'calc((100vh - 72px - 48px - 88px) / 2)'}
+                width={participants.length === 1 ? '100%' : 'calc(50% - 8px)'}
+                style={{
+                  aspectRatio: 480 / 640
+                }}
+              >
+                <Video
+                  key={participant.streamID + index}
+                  participant={participant}
+                  refs={streamRef.current}
+                  muted={participant.streamID === localMedia.current.id}
+                  name={participant.name}
+                  setParticipants={setParticipants}
+                />
+              </Box>
+            ))}
+          </Flex>
+        ) : (
+          <PackedGrid
+            className={classNames(styles.videoContainer)}
+            boxAspectRatio={isMobile ? 480 / 640 : 640 / 480}
+          >
+            {participants.map((participant, index) => (
               <Video
                 key={participant.streamID + index}
                 participant={participant}
@@ -282,49 +305,33 @@ const Call = () => {
                 name={participant.name}
                 setParticipants={setParticipants}
               />
-            </Box>
-          ))}
-        </Flex>
-      ) : (
-        <PackedGrid
-          className={classNames(styles.videoContainer)}
-          boxAspectRatio={isMobile ? 480 / 640 : 640 / 480}
-        >
-          {participants.map((participant, index) => (
-            <Video
-              key={participant.streamID + index}
-              participant={participant}
-              refs={streamRef.current}
-              muted={participant.streamID === localMedia.current.id}
-              name={participant.name}
-              setParticipants={setParticipants}
+            ))}
+          </PackedGrid>
+        )}
+
+
+        {!loading && (
+          <div className={styles.videoControls}>
+            <VideoControls
+              devices={devices}
+              onHangUp={hangup}
+              videoEnabled={!!callState.video}
+              audioEnabled={!!callState.audio}
+              onDeviceChange={onDeviceChange}
+              selectedAudioId={callState.audio?.exact}
+              selectedVideoId={callState.video?.exact}
+              toggleAudio={() => toggleMedia('audio')}
+              toggleVideo={() => toggleMedia('video')}
+              participantsCount={participants.length}
+              isCall
             />
-          ))}
-        </PackedGrid>
-      )}
+          </div>
+        )}
 
-
-      {!loading && (
-        <div className={styles.videoControls}>
-          <VideoControls
-            devices={devices}
-            onHangUp={hangup}
-            videoEnabled={!!callState.video}
-            audioEnabled={!!callState.audio}
-            onDeviceChange={onDeviceChange}
-            selectedAudioId={callState.audio?.exact}
-            selectedVideoId={callState.video?.exact}
-            toggleAudio={() => toggleMedia('audio')}
-            toggleVideo={() => toggleMedia('video')}
-            participantsCount={participants.length}
-            isCall
-          />
-        </div>
-      )}
-
-    </Container>
-    <Footer/>
-  </>
+      </Container>
+      <Footer/>
+    </Box>
+  )
 }
 
 

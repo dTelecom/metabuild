@@ -4,9 +4,10 @@
 	gap: 40px;
 	margin-top: 24px;
 	margin-bottom: 40px;
+	min-height: fit-content;
 
 	@media (min-width: 900px) {
-		margin-top: 42px;
+		margin-top: 0;
 		flex-direction: row;
 		gap: 70px;
 	}
@@ -21,10 +22,8 @@
 	border-radius: 10px;
 	display: flex;
 	flex-direction: column;
-	min-width: 342px;
-	max-width: 500px;
 	width: 100%;
-	height: 312px;
+	height: auto;
 	box-sizing: border-box;
 	padding: 12px 12px 24px;
 
@@ -32,7 +31,7 @@
 		max-width: initial;
 		min-width: initial;
 		width: 728px;
-		height: 568px;
+		max-height: 568px;
 		padding: 24px 24px 32px;
 	}
 
@@ -43,16 +42,17 @@
 		flex: 1;
 		border-radius: 10px;
 
+		@media (min-width: 900px) {
+			aspect-ratio: 640/480;
+		}
+
 		video {
 			border-radius: 10px;
 			min-width: 100%;
 			min-height: 100%;
-			width: auto;
-			height: auto;
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
 		}
 	}
 
@@ -61,7 +61,8 @@
 		margin: 16px auto 0;
 
 		@media (min-width: 900px) {
-			margin: 32px auto 0;
+			padding-top: 32px;
+			margin: auto auto 0;
 		}
 	}
 }
@@ -69,10 +70,6 @@
 .joinContainer {
 	flex-direction: column;
 	padding-left: 0;
-
-	@media (min-width: 900px) {
-		//padding-left: 140px;
-	}
 
 	.title {
 		background: linear-gradient(97.76deg, #5F8AFA 0%, #A463B0 98.77%);
