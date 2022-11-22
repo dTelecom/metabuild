@@ -24,10 +24,12 @@
 	flex-direction: column;
 	width: 100%;
 	height: auto;
+	aspect-ratio: 480/640;
 	box-sizing: border-box;
 	padding: 12px 12px 24px;
 
 	@media (min-width: 900px) {
+		aspect-ratio: initial;
 		max-width: initial;
 		min-width: initial;
 		width: 728px;

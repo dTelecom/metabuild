@@ -66,6 +66,8 @@ const Home = ({isJoin}) => {
           hideBadge: true,
           style: {width: '100%', height: '100%'}
         })
+
+        videoContainer.current.innerHTML = ''
         videoContainer.current.appendChild(video)
       }
 
@@ -89,10 +91,10 @@ const Home = ({isJoin}) => {
   const onDeviceChange = useCallback((type, deviceId) => {
     const constraint = {deviceId: {exact: deviceId}}
     if (type === 'audio') {
-      void loadMedia({...callState, audio: constraint})
+      void loadMedia({...callState, video: callState.video || true, audio: constraint})
     }
     if (type === 'video') {
-      void loadMedia({...callState, video: constraint})
+      void loadMedia({...callState, audio: callState.audio || true, video: constraint})
     }
   }, [callState])
 
@@ -106,7 +108,6 @@ const Home = ({isJoin}) => {
         showMutedBadge('audio', localVideo.current.id)
       }
       setCallState(prev => ({...prev, audio: !state}))
-
     }
   }
 
