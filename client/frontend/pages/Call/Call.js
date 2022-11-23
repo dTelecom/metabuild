@@ -17,6 +17,7 @@ import CopyToClipboard from 'react-copy-to-clipboard/src';
 import {exact} from 'prop-types';
 import Video from '../../components/Video/Video';
 import {PackedGrid} from 'react-packed-grid';
+import {desktopConstraints, mobileConstraints} from './const';
 
 const config = {
   iceServers: [
@@ -173,6 +174,7 @@ const Call = () => {
     LocalStream.getUserMedia({
       resolution: 'vga',
       audio: true,
+      video: isMobile ? mobileConstraints : desktopConstraints,
       // codec: params.has('codec') ? params.get('codec') : 'vp8',
       codec: 'vp8',
       sendEmptyOnMute: false,

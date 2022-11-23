@@ -108,7 +108,7 @@ export const useBreakpoints = () => {
     height: window.innerHeight
   })
 
-  const [dimensions, setDimensions] = useState({width: 0, height: 0})
+  const [dimensions, setDimensions] = useState({width: window.innerWidth, height: window.innerHeight})
 
   useEffect(() => {
     const handleResize = () => {
