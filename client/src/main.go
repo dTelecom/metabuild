@@ -343,27 +343,26 @@ func getNodeURL() (string, error) {
 func getEpochHeight() (uint64, error) {
 	var height uint64 = 0
 
-	node := ""
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
 	if err != nil {
-		return node, fmt.Errorf("key error: %w", err)
+		return height, fmt.Errorf("key error: %w", err)
 	}
 
 	network, ok := config.Networks["mainnet"]
 	if !ok {
-		return node, fmt.Errorf("unknown network '%s'", "mainnet")
+		return height, fmt.Errorf("unknown network '%s'", "mainnet")
 	}
 
 	rpc, err := client.NewClient(network.NodeURL)
 	if err != nil {
-		return node, fmt.Errorf("failed to create rpc client: %w", err)
+		return height, fmt.Errorf("failed to create rpc client: %w", err)
 	}
 
 	ctx := client.ContextWithKeyPair(context.Background(), keyPair)
 
 	res, err := rpc.ContractViewCallFunction(ctx, "webrtc.dtelecom.near", "get_epoch_height", base64.StdEncoding.EncodeToString([]byte("")), block.FinalityFinal())
 	if err != nil {
-		return node, fmt.Errorf("failed to view get_epoch_height: %w", err)
+		return height, fmt.Errorf("failed to view get_epoch_height: %w", err)
 	}
 
 	var viewResult ViewResult
