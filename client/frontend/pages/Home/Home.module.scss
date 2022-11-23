@@ -1,6 +1,5 @@
 .container {
 	flex-direction: column-reverse;
-	align-items: center;
 	gap: 40px;
 	margin-top: 24px;
 	margin-bottom: 40px;
@@ -24,7 +23,7 @@
 	flex-direction: column;
 	width: 100%;
 	height: auto;
-	aspect-ratio: 480/640;
+	aspect-ratio: 360/640;
 	box-sizing: border-box;
 	padding: 12px 12px 24px;
 
@@ -67,6 +66,7 @@
 .joinContainer {
 	flex-direction: column;
 	padding-left: 0;
+	padding-top: 12px;
 
 	.title {
 		background: linear-gradient(97.76deg, #5F8AFA 0%, #A463B0 98.77%);

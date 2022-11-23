@@ -1,6 +1,5 @@
 import * as styles from './Call.module.scss';
 import {MutedAudio, MutedVideo, SignalIcon, VideoPlaceholder} from '../../assets';
-import {useEffect, useState} from 'react';
 
 export const createBadge = (streamId, name) => {
   const badge = document.createElement('div')
@@ -20,26 +19,30 @@ export const createBadge = (streamId, name) => {
   return badge
 }
 
-export const createCallControl = (streamId) => {
+export const createCallControl = (streamId, audio, video) => {
   const container = document.createElement('div')
   container.className = styles.controlsBox
 
-  const audio = document.createElement('img')
-  audio.src = MutedAudio
-  audio.id = 'audio_' + streamId
-  audio.style.display = 'none'
-  container.appendChild(audio)
+  const audioEl = document.createElement('img')
+  audioEl.src = MutedAudio
+  audioEl.id = 'audio_' + streamId
+  if (audio) {
+    audioEl.style.display = 'none'
+  }
+  container.appendChild(audioEl)
 
-  const video = document.createElement('img')
-  video.src = MutedVideo
-  video.id = 'video_' + streamId
-  video.style.display = 'none'
-  container.appendChild(video)
+  const videoEl = document.createElement('img')
+  videoEl.src = MutedVideo
+  videoEl.id = 'video_' + streamId
+  if (video) {
+    videoEl.style.display = 'none'
+  }
+  container.appendChild(videoEl)
 
   return container
 }
 
-export const createVideoElement = ({media: stream, muted, name, hideBadge, style}) => {
+export const createVideoElement = ({media: stream, muted, name, hideBadge, style, audio = true, video = true}) => {
   const container = document.createElement('div')
   container.className = styles.streamContainer
   if (style) {
@@ -68,7 +71,7 @@ export const createVideoElement = ({media: stream, muted, name, hideBadge, style
     container.appendChild(badge)
   }
 
-  const callControls = createCallControl(stream.id)
+  const callControls = createCallControl(stream.id, audio, video)
   container.appendChild(callControls)
 
   return container
@@ -101,28 +104,3 @@ export const hideMutedBadge = (type, id) => {
     }
   }
 }
-
-export const useBreakpoints = () => {
-  const getDimensions = () => ({
-    width: window.innerWidth,
-    height: window.innerHeight
-  })
-
-  const [dimensions, setDimensions] = useState({width: window.innerWidth, height: window.innerHeight})
-
-  useEffect(() => {
-    const handleResize = () => {
-      setDimensions(getDimensions())
-    }
-    setDimensions(getDimensions())
-    window.addEventListener('resize', handleResize)
-
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
-
-  return {
-    isMobile: dimensions.width <= 900
-  };
-};
