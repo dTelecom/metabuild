@@ -40,6 +40,7 @@ type Conference struct {
 	StartedAt          time.Time
 	CallID             string
 	AccountID          string
+	Host               string
 }
 
 //Participant peer
@@ -232,6 +233,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 					CallBackURL: conferenceUser.CallBackURL,
 					CallID:      conferenceUser.CallID,
 					AccountID:   conferenceUser.AccountID,
+					Host:        p.ID(),
 				}
 			}
 
@@ -407,6 +409,18 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		if err != nil {
 			replyError(err)
 		}
+
+	case "end":
+		if ival, ok := Conferences.Load(p.Session().ID()); ok {
+			conference := ival.(Conference)
+			if conference.Host == p.ID() {
+				for _, peer := range p.Session().Peers() {
+					peer.Close()
+				}
+			} else {
+				p.Close()
+			}
+		}
 	}
 }
 
@@ -505,16 +519,19 @@ func createCall(callID string, clientID string, signb64 string, epoch uint64) er
 func endCall(callID string, clientID string, signb64 string, epoch uint64, duration int) error {
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
 	if err != nil {
+		log.Printf("endCall err: %v\n", err)
 		return fmt.Errorf("key error: %w", err)
 	}
 
 	network, ok := config.Networks["mainnet"]
 	if !ok {
+		log.Printf("endCall err: %v\n", "unknown network")
 		return fmt.Errorf("unknown network '%s'", "mainnet")
 	}
 
 	rpc, err := client.NewClient(network.NodeURL)
 	if err != nil {
+		log.Printf("endCall err: %v\n", err)
 		return fmt.Errorf("failed to create rpc client: %w", err)
 	}
 
@@ -523,6 +540,7 @@ func endCall(callID string, clientID string, signb64 string, epoch uint64, durat
 
 	sign, err := base64.StdEncoding.DecodeString(signb64)
 	if err != nil {
+		log.Printf("endCall err: %v\n", err)
 		return fmt.Errorf("failed to decode signature: %w", err)
 	}
 
@@ -550,6 +568,7 @@ func endCall(callID string, clientID string, signb64 string, epoch uint64, durat
 	)
 
 	if err != nil {
+		log.Printf("endCall err: %v\n", err)
 		return fmt.Errorf("end_call: %w", err)
 	}
 	log.Printf("end_call: %v", res)
