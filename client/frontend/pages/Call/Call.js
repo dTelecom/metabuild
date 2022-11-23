@@ -63,6 +63,7 @@ const Call = () => {
 
   const hangup = useCallback(() => {
     if (clientLocal.current) {
+      clientLocal.current.signal.call("end", {})
       clientLocal.current.close();
       clientLocal.current = null
       navigate('/')
@@ -112,6 +113,10 @@ const Call = () => {
       const signalLocal = new IonSFUJSONRPCSignal(response.data.url);
 
       clientLocal.current = new Client(signalLocal, config);
+
+      clientLocal.current.onerrnegotiate = () => {
+        hangup()
+      };
 
       clientLocal.current.onspeaker = (speakers) => {
         console.log('[onspeaker] speakers=', speakers)
