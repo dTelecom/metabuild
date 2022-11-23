@@ -18,8 +18,10 @@ import {exact} from 'prop-types';
 import Video from '../../components/Video/Video';
 import {PackedGrid} from 'react-packed-grid';
 import {desktopConstraints, mobileConstraints} from './const';
+import * as e2ee from './e2ee'
 
 const config = {
+  encodedInsertableStreams: true,
   iceServers: [
     {
       urls: 'stun:stun.l.google.com:19302',
@@ -199,7 +201,13 @@ const Call = () => {
         {streamID: media.id, name},
       ])
 
+
       clientLocal.current.publish(media)
+
+      clientLocal.current.transports[0].pc.getSenders().forEach(e2ee.setupSenderTransform);
+      clientLocal.current.transports[1].pc.addEventListener('track', (e)=>{
+        e2ee.setupReceiverTransform(e.receiver);
+      });
 
       setLoading(false)
 
