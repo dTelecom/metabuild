@@ -120,6 +120,10 @@ impl Contract {
     pub fn get_total_clients(&self) -> WrappedLength {
         near_sdk::json_types::U64(self.clients.len())
     }
+
+    pub fn get_epoch_height(&self) -> EpochHeight {
+        env::epoch_height()
+    }
 }
 
 #[cfg(test)]

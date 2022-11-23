@@ -343,23 +343,36 @@ func getNodeURL() (string, error) {
 func getEpochHeight() (uint64, error) {
 	var height uint64 = 0
 
+	node := ""
+	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
+	if err != nil {
+		return node, fmt.Errorf("key error: %w", err)
+	}
+
 	network, ok := config.Networks["mainnet"]
 	if !ok {
-		return height, fmt.Errorf("unknown network '%s'", "mainnet")
+		return node, fmt.Errorf("unknown network '%s'", "mainnet")
 	}
 
 	rpc, err := client.NewClient(network.NodeURL)
 	if err != nil {
-		return height, fmt.Errorf("failed to create rpc client: %w", err)
+		return node, fmt.Errorf("failed to create rpc client: %w", err)
 	}
 
-	ctx := context.Background()
+	ctx := client.ContextWithKeyPair(context.Background(), keyPair)
 
-	res, err := rpc.BlockDetails(ctx, block.FinalityFinal())
+	res, err := rpc.ContractViewCallFunction(ctx, "webrtc.dtelecom.near", "get_epoch_height", base64.StdEncoding.EncodeToString([]byte("")), block.FinalityFinal())
 	if err != nil {
-		return height, fmt.Errorf("failed to get block: %w", err)
+		return node, fmt.Errorf("failed to view get_epoch_height: %w", err)
 	}
-	return res.Header.Height, nil
+
+	var viewResult ViewResult
+
+	json.Unmarshal([]byte(res.Result), &viewResult)
+
+	json.Unmarshal(viewResult.Result, &height)
+
+	return height, nil
 }
 
 func getConferenceData(sid string, uid string, callID string) (string, string, error) {

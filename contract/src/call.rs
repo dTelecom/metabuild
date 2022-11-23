@@ -15,7 +15,11 @@ pub struct Call {
 #[near_bindgen]
 impl Contract {
     pub fn create_call(&mut self, id: String, client_id: String, epoch: EpochHeight, sign: String) {
-        assert!(env::epoch_height() - epoch < 2, "Wrong epoch");
+        assert!(
+            env::epoch_height() - epoch < 2,
+            "Wrong epoch {}",
+            env::epoch_height()
+        );
 
         let signature =
             ed25519_dalek::Signature::from_bytes(&bs58::decode(sign).into_vec().unwrap()).unwrap();
