@@ -18,11 +18,11 @@ import (
 	"github.com/labstack/echo"
 	"github.com/lithammer/shortuuid/v4"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
 // CallBackURL str
-// var CallBackURL = "http://localhost:3000"
 var CallBackURL = "https://nmeet.org"
 
 // AccountID - TODO: env
@@ -50,7 +50,7 @@ type Conference struct {
 	CallID     string    `json:"callId"`
 }
 
-// ConferenceUser model
+// ConferenceUser json
 type ConferenceUser struct {
 	SID         string `json:"sid"`
 	UID         string `json:"uid"`
@@ -59,11 +59,17 @@ type ConferenceUser struct {
 	AccountID   string `json:"AccountId"`
 }
 
-// ConferenceView model
+// ConferenceView json
 type ConferenceView struct {
 	SID string `json:"sid"`
 	UID string `json:"uid"`
 	URL string `json:"url"`
+}
+
+// SignatureView json
+type SignatureView struct {
+	Signature string `json:"signature"`
+	Height    uint64 `json:"height"`
 }
 
 func handlerFunc(msg string) func(echo.Context) error {
@@ -93,8 +99,6 @@ func newConference(db *gorm.DB) func(echo.Context) error {
 		}
 
 		url, err := getNodeURL()
-		// url := "ws://127.0.0.1:57000/ws"
-		// var err error
 		if err == nil {
 			conference := &Conference{
 				SID:    confID,
@@ -185,8 +189,16 @@ func addParticipant(db *gorm.DB) func(echo.Context) error {
 		}
 		db.Save(&participant)
 
-		sig, _ := getConfirmationSignature(conference.CallID, duration)
-		return c.String(http.StatusOK, sig)
+		height, _ := getEpochHeight()
+
+		sig, _ := getConfirmationSignature(conference.CallID, duration, height)
+
+		signatureView := &SignatureView{
+			Signature: sig,
+			Height:    height,
+		}
+
+		return c.JSON(http.StatusOK, signatureView)
 	}
 }
 
@@ -213,8 +225,15 @@ func removeParticipant(db *gorm.DB) func(echo.Context) error {
 		}
 		db.Save(&participant)
 
-		sig, _ := getConfirmationSignature(conference.CallID, duration)
-		return c.String(http.StatusOK, sig)
+		height, _ := getEpochHeight()
+
+		sig, _ := getConfirmationSignature(conference.CallID, duration, height)
+		signatureView := &SignatureView{
+			Signature: sig,
+			Height:    height,
+		}
+
+		return c.JSON(http.StatusOK, signatureView)
 	}
 }
 
@@ -231,8 +250,15 @@ func removeConference(db *gorm.DB) func(echo.Context) error {
 		}
 		db.Save(&conference)
 
-		sig, _ := getConfirmationSignature(conference.CallID, duration)
-		return c.String(http.StatusOK, sig)
+		height, _ := getEpochHeight()
+
+		sig, _ := getConfirmationSignature(conference.CallID, duration, height)
+		signatureView := &SignatureView{
+			Signature: sig,
+			Height:    height,
+		}
+
+		return c.JSON(http.StatusOK, signatureView)
 	}
 }
 
@@ -314,6 +340,28 @@ func getNodeURL() (string, error) {
 	return getNodesResult[randomIndex].Address, nil
 }
 
+func getEpochHeight() (uint64, error) {
+	var height uint64 = 0
+
+	network, ok := config.Networks["mainnet"]
+	if !ok {
+		return height, fmt.Errorf("unknown network '%s'", "mainnet")
+	}
+
+	rpc, err := client.NewClient(network.NodeURL)
+	if err != nil {
+		return height, fmt.Errorf("failed to create rpc client: %w", err)
+	}
+
+	ctx := context.Background()
+
+	res, err := rpc.BlockDetails(ctx, block.FinalityFinal())
+	if err != nil {
+		return height, fmt.Errorf("failed to get block: %w", err)
+	}
+	return res.Header.Height, nil
+}
+
 func getConferenceData(sid string, uid string, callID string) (string, string, error) {
 
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
@@ -336,14 +384,14 @@ func getConferenceData(sid string, uid string, callID string) (string, string, e
 	return string(j), base64.StdEncoding.EncodeToString(sig.Value()), nil
 }
 
-func getConfirmationSignature(callID string, duration string) (string, error) {
+func getConfirmationSignature(callID string, duration string, height uint64) (string, error) {
 
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
 	if err != nil {
 		return "", fmt.Errorf("key error: %w", err)
 	}
 
-	message := callID + ":" + duration
+	message := callID + ":" + duration + ":" + strconv.Itoa(int(height))
 
 	log.Printf("pubKey: %v", keyPair.PublicKey)
 	sig := keyPair.Sign([]byte(message))

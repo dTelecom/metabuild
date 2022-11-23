@@ -14,7 +14,9 @@ pub struct Call {
 
 #[near_bindgen]
 impl Contract {
-    pub fn create_call(&mut self, id: String, client_id: String, sign: String) {
+    pub fn create_call(&mut self, id: String, client_id: String, epoch: EpochHeight, sign: String) {
+        assert!(env::epoch_height() - epoch < 2, "Wrong epoch");
+
         let signature =
             ed25519_dalek::Signature::from_bytes(&bs58::decode(sign).into_vec().unwrap()).unwrap();
 
@@ -40,7 +42,7 @@ impl Contract {
 
         let public_key = ed25519_dalek::PublicKey::from_bytes(&client.pk.as_bytes()[1..]).unwrap();
 
-        let message = id.clone() + ":0";
+        let message = id.clone() + ":0:" + &epoch.to_string();
         let verified = public_key.verify(message.as_bytes(), &signature).is_ok();
 
         require!(verified == true, "Signature mismatch");
@@ -68,6 +70,7 @@ impl Contract {
         id: String,
         client_id: String,
         minutes: u128,
+        epoch: EpochHeight,
         sign: String,
     ) -> Promise {
         let signature =
@@ -89,7 +92,7 @@ impl Contract {
 
         let public_key = ed25519_dalek::PublicKey::from_bytes(&client.pk.as_bytes()[1..]).unwrap();
 
-        let message = id.clone() + ":" + &minutes.to_string();
+        let message = id.clone() + ":" + &minutes.to_string() + ":" + &epoch.to_string();
         let verified = public_key.verify(message.as_bytes(), &signature).is_ok();
 
         require!(verified == true, "Signature mismatch");
@@ -168,7 +171,9 @@ impl Contract {
             near_sdk::env::panic_str("Method method is private");
         }
 
-        let call = self.get_recent_call(id).unwrap_or_else(|| env::panic_str("Call not found"));
+        let call = self
+            .get_recent_call(id)
+            .unwrap_or_else(|| env::panic_str("Call not found"));
 
         let mut node = expect_token_found(self.nodes.get(&call.node_id));
         let mut client = expect_token_found(self.clients.get(&call.client_id));

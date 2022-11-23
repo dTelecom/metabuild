@@ -214,10 +214,11 @@ mod tests {
         set_context("mainer_a", 10 * NEAR, 1);
         contract.add_node("https://example.com/".to_string());
 
-        let signature1 = keypair.sign(b"123:0");
+        let signature1 = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature1).into_string(),
         );
 
@@ -229,11 +230,12 @@ mod tests {
         assert_eq!(call_started.client_id, "client_a".parse().unwrap());
         assert_eq!(call_started.node_id, "mainer_a".parse().unwrap());
 
-        let signature2 = keypair.sign(b"123:100");
+        let signature2 = keypair.sign(b"123:100:1");
         contract.end_call(
             "123".to_string(),
             "client_a".to_string(),
             100,
+            1,
             bs58::encode(signature2).into_string(),
         );
         let calls2 = contract.get_active_calls();
@@ -267,10 +269,11 @@ mod tests {
         set_context("mainer_a", 10 * NEAR, 1);
         contract.add_node("https://example.com/".to_string());
 
-        let signature1 = keypair.sign(b"123:0");
+        let signature1 = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature1).into_string(),
         );
 
@@ -293,18 +296,20 @@ mod tests {
         set_context("mainer_a", 10 * NEAR, 1);
         contract.add_node("https://example.com/".to_string());
 
-        let signature1 = keypair.sign(b"123:0");
+        let signature1 = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature1).into_string(),
         );
 
-        let signature2 = keypair.sign(b"123:100");
+        let signature2 = keypair.sign(b"123:100:1");
         contract.end_call(
             "123".to_string(),
             "client_a".to_string(),
             100,
+            1,
             bs58::encode(signature2).into_string(),
         );
 
@@ -316,18 +321,20 @@ mod tests {
 
         set_context("mainer_a", 10 * NEAR, 2);
 
-        let signature3 = keypair.sign(b"1234:0");
+        let signature3 = keypair.sign(b"1234:0:2");
         contract.create_call(
             "1234".to_string(),
             "client_a".to_string(),
+            2,
             bs58::encode(signature3).into_string(),
         );
 
-        let signature4 = keypair.sign(b"1234:100");
+        let signature4 = keypair.sign(b"1234:100:2");
         contract.end_call(
             "1234".to_string(),
             "client_a".to_string(),
             100,
+            2,
             bs58::encode(signature4).into_string(),
         );
 
@@ -339,18 +346,20 @@ mod tests {
 
         set_context("mainer_a", 10 * NEAR, 3);
 
-        let signature4 = keypair.sign(b"12345:0");
+        let signature4 = keypair.sign(b"12345:0:3");
         contract.create_call(
             "12345".to_string(),
             "client_a".to_string(),
+            3,
             bs58::encode(signature4).into_string(),
         );
 
-        let signature5 = keypair.sign(b"12345:100");
+        let signature5 = keypair.sign(b"12345:100:3");
         contract.end_call(
             "12345".to_string(),
             "client_a".to_string(),
             100,
+            3,
             bs58::encode(signature5).into_string(),
         );
 
@@ -371,15 +380,14 @@ mod tests {
 
         let keypair: Keypair = prepare_keypair();
 
-        set_context("client_a", 1 * NEAR, 1);
-
         set_context("mainer_a", 10 * NEAR, 1);
         contract.add_node("https://example.com/".to_string());
 
-        let signature = keypair.sign(b"123");
+        let signature = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature).into_string(),
         );
     }
@@ -396,10 +404,11 @@ mod tests {
 
         set_context("mainer_a", 10 * NEAR, 1);
 
-        let signature = keypair.sign(b"123");
+        let signature = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature).into_string(),
         );
     }
@@ -417,18 +426,20 @@ mod tests {
         set_context("mainer_a", 10 * NEAR, 1);
         contract.add_node("https://example.com/".to_string());
 
-        let signature1 = keypair.sign(b"123:0");
+        let signature1 = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature1).into_string(),
         );
 
-        let signature2 = keypair.sign(b"123:100");
+        let signature2 = keypair.sign(b"123:100:1");
         contract.end_call(
             "123".to_string(),
             "client_a".to_string(),
             100,
+            1,
             bs58::encode(signature2).into_string(),
         );
         assert_eq!(contract.balance, 485_000_000_000_000_000_000_00);
@@ -436,6 +447,7 @@ mod tests {
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature1).into_string(),
         );
     }
@@ -452,18 +464,20 @@ mod tests {
         set_context("mainer_a", 10 * NEAR, 1);
         contract.add_node("https://example.com/".to_string());
 
-        let signature1 = keypair.sign(b"123:0");
+        let signature1 = keypair.sign(b"123:0:1");
         contract.create_call(
             "123".to_string(),
             "client_a".to_string(),
+            1,
             bs58::encode(signature1).into_string(),
         );
 
-        let signature2 = keypair.sign(b"123:100");
+        let signature2 = keypair.sign(b"123:100:1");
         contract.end_call(
             "123".to_string(),
             "client_a".to_string(),
             100,
+            1,
             bs58::encode(signature2).into_string(),
         );
 
