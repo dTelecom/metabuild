@@ -65,7 +65,12 @@
 	border-radius: 10px;
 
 	video {
-		position: relative;
+		position: absolute;
+		inset: 0;
+
+		@media (min-width: 900px) {
+			position: relative;
+		}
 		z-index: 1;
 		border-radius: 10px;
 		width: 100%;

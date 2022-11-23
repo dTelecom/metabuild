@@ -20,7 +20,7 @@ const Home = ({isJoin}) => {
   const [devices, setDevices] = useState([])
   const [participants, setParticipants] = useState()
   const [callState, setCallState] = useState(
-    {audio: true, video: {width: 480, height: 640}}
+    {audio: true, video: true}
   );
   const {sid} = useParams();
   const videoContainer = useRef()
