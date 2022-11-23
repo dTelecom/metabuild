@@ -69,7 +69,7 @@ type ConferenceView struct {
 // SignatureView json
 type SignatureView struct {
 	Signature string `json:"signature"`
-	Height    uint64 `json:"height"`
+	Epoch     uint64 `json:"epoch"`
 }
 
 func handlerFunc(msg string) func(echo.Context) error {
@@ -189,13 +189,13 @@ func addParticipant(db *gorm.DB) func(echo.Context) error {
 		}
 		db.Save(&participant)
 
-		height, _ := getEpochHeight()
+		epoch, _ := getEpochHeight()
 
-		sig, _ := getConfirmationSignature(conference.CallID, duration, height)
+		sig, _ := getConfirmationSignature(conference.CallID, duration, epoch)
 
 		signatureView := &SignatureView{
 			Signature: sig,
-			Height:    height,
+			Epoch:     epoch,
 		}
 
 		return c.JSON(http.StatusOK, signatureView)
@@ -225,12 +225,12 @@ func removeParticipant(db *gorm.DB) func(echo.Context) error {
 		}
 		db.Save(&participant)
 
-		height, _ := getEpochHeight()
+		epoch, _ := getEpochHeight()
 
-		sig, _ := getConfirmationSignature(conference.CallID, duration, height)
+		sig, _ := getConfirmationSignature(conference.CallID, duration, epoch)
 		signatureView := &SignatureView{
 			Signature: sig,
-			Height:    height,
+			Epoch:     epoch,
 		}
 
 		return c.JSON(http.StatusOK, signatureView)
@@ -250,12 +250,12 @@ func removeConference(db *gorm.DB) func(echo.Context) error {
 		}
 		db.Save(&conference)
 
-		height, _ := getEpochHeight()
+		epoch, _ := getEpochHeight()
 
-		sig, _ := getConfirmationSignature(conference.CallID, duration, height)
+		sig, _ := getConfirmationSignature(conference.CallID, duration, epoch)
 		signatureView := &SignatureView{
 			Signature: sig,
-			Height:    height,
+			Epoch:     epoch,
 		}
 
 		return c.JSON(http.StatusOK, signatureView)
@@ -384,14 +384,14 @@ func getConferenceData(sid string, uid string, callID string) (string, string, e
 	return string(j), base64.StdEncoding.EncodeToString(sig.Value()), nil
 }
 
-func getConfirmationSignature(callID string, duration string, height uint64) (string, error) {
+func getConfirmationSignature(callID string, duration string, epoch uint64) (string, error) {
 
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
 	if err != nil {
 		return "", fmt.Errorf("key error: %w", err)
 	}
 
-	message := callID + ":" + duration + ":" + strconv.Itoa(int(height))
+	message := callID + ":" + duration + ":" + strconv.Itoa(int(epoch))
 
 	log.Printf("pubKey: %v", keyPair.PublicKey)
 	sig := keyPair.Sign([]byte(message))

@@ -102,7 +102,7 @@ type GetCallsResult struct {
 // SignatureView json
 type SignatureView struct {
 	Signature string `json:"signature"`
-	Height    uint64 `json:"height"`
+	Epoch     uint64 `json:"epoch"`
 }
 
 // JSONSignal struct
@@ -275,7 +275,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 				}
 
 				if shouldCreate == true {
-					go createCall(conferenceUser.CallID, conferenceUser.AccountID, signatureView.Signature, signatureView.Height)
+					go createCall(conferenceUser.CallID, conferenceUser.AccountID, signatureView.Signature, signatureView.Epoch)
 				}
 				p.Logger.Info(string(b), "for notify")
 			}
@@ -350,7 +350,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 								p.Logger.Error(err, "error sending notify")
 							}
 
-							go endCall(conferenceUser.CallID, conferenceUser.AccountID, signatureView.Signature, signatureView.Height, conference.GetDuration())
+							go endCall(conferenceUser.CallID, conferenceUser.AccountID, signatureView.Signature, signatureView.Epoch, conference.GetDuration())
 
 							p.Logger.Info(string(b), "for notify")
 						}
@@ -444,7 +444,7 @@ func getKeys(clientID string) ([]client.AccessKeyViewInfo, error) {
 	return accessKeyViewListResp.Keys, nil
 }
 
-func createCall(callID string, clientID string, signb64 string, height uint64) error {
+func createCall(callID string, clientID string, signb64 string, epoch uint64) error {
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
 	if err != nil {
 		log.Printf("createCall err: %v\n", err)
@@ -478,7 +478,7 @@ func createCall(callID string, clientID string, signb64 string, height uint64) e
 		"id":        callID,
 		"client_id": clientID,
 		"sign":      base58.Encode(s.Value()),
-		"height":    height,
+		"epoch":     epoch,
 	}
 
 	jsonStr, _ := json.Marshal(map1)
@@ -502,7 +502,7 @@ func createCall(callID string, clientID string, signb64 string, height uint64) e
 	return nil
 }
 
-func endCall(callID string, clientID string, signb64 string, height uint64, duration int) error {
+func endCall(callID string, clientID string, signb64 string, epoch uint64, duration int) error {
 	keyPair, err := key.NewBase58KeyPair(os.Getenv("NEAR_PK"))
 	if err != nil {
 		return fmt.Errorf("key error: %w", err)
@@ -533,7 +533,7 @@ func endCall(callID string, clientID string, signb64 string, height uint64, dura
 		"client_id": clientID,
 		"sign":      base58.Encode(s.Value()),
 		"minutes":   duration,
-		"height":    height,
+		"epoch":     epoch,
 	}
 
 	jsonStr, _ := json.Marshal(map1)
