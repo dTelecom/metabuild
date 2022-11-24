@@ -361,7 +361,7 @@ const Call = () => {
                 maxHeight={participants.length === 1 ? 'auto' : 'calc((100vh - 72px - 48px - 88px) / 2)'}
                 width={participants.length === 1 ? '100%' : 'calc(50% - 8px)'}
                 style={{
-                  aspectRatio: 360 / 640
+                  aspectRatio: 480 / 640
                 }}
               >
                 <Video

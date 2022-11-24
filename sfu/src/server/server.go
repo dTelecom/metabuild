@@ -607,12 +607,13 @@ func notifyRemoveConference(baseURL string, SID string, duration int, callID str
 }
 
 func (conference *Conference) observer() {
+	endTime := conference.StartedAt.Add(time.Minute * 30)
 	for {
 		time.Sleep(time.Duration(10) * time.Second)
 		if conference.EndedAt.IsZero() == false {
 			break
 		}
-		if conference.StartedAt.After(conference.StartedAt.Add(time.Minute*30)) == true {
+		if time.Now().After(endTime) == true {
 			for _, peer := range conference.Session.Peers() {
 				peer.Close()
 			}
