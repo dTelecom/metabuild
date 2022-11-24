@@ -41,6 +41,7 @@ type Conference struct {
 	CallID             string
 	AccountID          string
 	Host               string
+	Session            *sfu.SessionLocal
 }
 
 //Participant peer
@@ -128,6 +129,12 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 
 	switch req.Method {
 	case "join":
+		if len(p.Session().Peers()) > 9 {
+			err := fmt.Errorf("too many participants")
+			p.Logger.Error(err, "connect: too many participants")
+			replyError(err)
+			break
+		}
 		var join Join
 		err := json.Unmarshal(*req.Params, &join)
 		if err != nil {
@@ -234,7 +241,9 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 					CallID:      conferenceUser.CallID,
 					AccountID:   conferenceUser.AccountID,
 					Host:        p.ID(),
+					Session:     p.Session().(*sfu.SessionLocal),
 				}
+				go conference.observer()
 			}
 
 			if _, ok := conference.OnlineParticipants.Load(p.ID()); !ok {
@@ -251,35 +260,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 					shouldCreate = true
 				}
 				Conferences.Store(p.Session().ID(), conference)
-
-				url := conference.CallBackURL + "/api/participant/add/" + p.Session().ID() + "/" + p.ID() + "/" + streamID + "/" + strconv.Itoa(conference.GetDuration())
-
-				p.Logger.Info(url, "to notify")
-
-				req, err := http.NewRequest("PUT", url, nil)
-				if err != nil {
-					p.Logger.Error(err, "error sending notify")
-				}
-				response, err := http.DefaultClient.Do(req)
-				if err != nil {
-					p.Logger.Error(err, "error sending notify")
-				}
-				defer response.Body.Close()
-
-				b, err := io.ReadAll(response.Body)
-				if err != nil {
-					p.Logger.Error(err, "error sending notify")
-				}
-				var signatureView SignatureView
-				err = json.Unmarshal(b, &signatureView)
-				if err != nil {
-					p.Logger.Error(err, "error sending notify")
-				}
-
-				if shouldCreate == true {
-					go createCall(conferenceUser.CallID, conferenceUser.AccountID, signatureView.Signature, signatureView.Epoch)
-				}
-				p.Logger.Info(string(b), "for notify")
+				go notifyAddParticipant(conference.CallBackURL, p.Session().ID(), p.ID(), streamID, conference.GetDuration(), shouldCreate, conferenceUser.CallID, conferenceUser.AccountID)
 			}
 		}
 
@@ -301,26 +282,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 						Conferences.Store(p.Session().ID(), conference)
 					}
 
-					url := conference.CallBackURL + "/api/participant/remove/" + p.Session().ID() + "/" + p.ID() + "/" + strconv.Itoa(conference.GetDuration())
-
-					p.Logger.Info(url, "to notify")
-
-					req, err := http.NewRequest("PUT", url, nil)
-					if err != nil {
-						p.Logger.Error(err, "error sending notify")
-					}
-					response, err := http.DefaultClient.Do(req)
-					if err != nil {
-						p.Logger.Error(err, "error sending notify")
-					}
-					defer response.Body.Close()
-
-					b, err := httputil.DumpResponse(response, true)
-					if err != nil {
-						p.Logger.Error(err, "error sending notify")
-					}
-
-					p.Logger.Info(string(b), "for notify")
+					go notifyRemoveParticipant(conference.CallBackURL, p.Session().ID(), p.ID(), conference.GetDuration())
 
 					if len(p.Session().Peers()) == 0 {
 						if ivalc, ok := Conferences.Load(p.Session().ID()); ok {
@@ -328,33 +290,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 							conference.EndedAt = time.Now()
 							Conferences.Store(p.Session().ID(), conference)
 
-							url := conference.CallBackURL + "/api/conference/remove/" + p.Session().ID() + "/" + strconv.Itoa(conference.GetDuration())
-
-							p.Logger.Info(url, "to notify")
-
-							req, err := http.NewRequest("PUT", url, nil)
-							if err != nil {
-								p.Logger.Error(err, "error sending notify")
-							}
-							response, err := http.DefaultClient.Do(req)
-							if err != nil {
-								p.Logger.Error(err, "error sending notify")
-							}
-							defer response.Body.Close()
-
-							b, err := io.ReadAll(response.Body)
-							if err != nil {
-								p.Logger.Error(err, "error sending notify")
-							}
-							var signatureView SignatureView
-							err = json.Unmarshal(b, &signatureView)
-							if err != nil {
-								p.Logger.Error(err, "error sending notify")
-							}
-
-							go endCall(conferenceUser.CallID, conferenceUser.AccountID, signatureView.Signature, signatureView.Epoch, conference.GetDuration())
-
-							p.Logger.Info(string(b), "for notify")
+							go notifyRemoveConference(conference.CallBackURL, p.Session().ID(), conference.GetDuration(), conferenceUser.CallID, conferenceUser.AccountID)
 						}
 					}
 				}
@@ -573,4 +509,103 @@ func endCall(callID string, clientID string, signb64 string, epoch uint64, durat
 	}
 	log.Printf("end_call: %v", res)
 	return nil
+}
+
+func notifyAddParticipant(baseURL string, SID string, UID string, streamID string, duration int, shouldCreate bool, callID string, accountID string) {
+	url := baseURL + "/api/participant/add/" + SID + "/" + UID + "/" + streamID + "/" + strconv.Itoa(duration)
+
+	log.Printf("notifyAddParticipant: %v", url)
+
+	req, err := http.NewRequest("PUT", url, nil)
+	if err != nil {
+		log.Printf("notifyAddParticipant: %v", err)
+	}
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("notifyAddParticipant: %v", err)
+	}
+	defer response.Body.Close()
+
+	b, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("notifyAddParticipant: %v", err)
+	}
+
+	var signatureView SignatureView
+	err = json.Unmarshal(b, &signatureView)
+	if err != nil {
+		log.Printf("notifyAddParticipant: %v", err)
+	}
+
+	if shouldCreate == true {
+		createCall(callID, accountID, signatureView.Signature, signatureView.Epoch)
+	}
+	log.Printf("notifyAddParticipant: %v", string(b))
+}
+
+func notifyRemoveParticipant(baseURL string, SID string, UID string, duration int) {
+	url := baseURL + "/api/participant/remove/" + SID + "/" + UID + "/" + strconv.Itoa(duration)
+
+	log.Printf("notifyRemoveParticipant: %v", url)
+
+	req, err := http.NewRequest("PUT", url, nil)
+	if err != nil {
+		log.Printf("notifyRemoveParticipant: %v", err)
+	}
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("notifyRemoveParticipant: %v", err)
+	}
+	defer response.Body.Close()
+
+	b, err := httputil.DumpResponse(response, true)
+	if err != nil {
+		log.Printf("notifyRemoveParticipant: %v", err)
+	}
+
+	log.Printf("notifyRemoveParticipant: %v", string(b))
+}
+
+func notifyRemoveConference(baseURL string, SID string, duration int, callID string, accountID string) {
+	url := baseURL + "/api/conference/remove/" + SID + "/" + strconv.Itoa(duration)
+
+	log.Printf("notifyRemoveConference: %v", url)
+
+	req, err := http.NewRequest("PUT", url, nil)
+	if err != nil {
+		log.Printf("notifyRemoveConference: %v", err)
+	}
+	response, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("notifyRemoveConference: %v", err)
+	}
+	defer response.Body.Close()
+
+	b, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Printf("notifyRemoveConference: %v", err)
+	}
+	var signatureView SignatureView
+	err = json.Unmarshal(b, &signatureView)
+	if err != nil {
+		log.Printf("notifyRemoveConference: %v", err)
+	}
+
+	endCall(callID, accountID, signatureView.Signature, signatureView.Epoch, duration)
+
+	log.Printf("notifyRemoveConference: %v", string(b))
+}
+
+func (conference *Conference) observer() {
+	for {
+		time.Sleep(time.Duration(10) * time.Second)
+		if conference.EndedAt.IsZero() == false {
+			break
+		}
+		if conference.StartedAt.After(conference.StartedAt.Add(time.Minute*30)) == true {
+			for _, peer := range conference.Session.Peers() {
+				peer.Close()
+			}
+		}
+	}
 }
