@@ -34,10 +34,15 @@ const Call = () => {
   const {sid} = useParams()
   const location = useLocation()
   const clientLocal = useRef()
+  const dcLocal = useRef()
   const [participants, setParticipants] = useState([])
   const [loading, setLoading] = useState(true)
+  const [audioMute, setAudioMute] = useState(false)
+  const [videoMute, setVideoMute] = useState(false)
+  const [dcOpen, setDcOpen] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
   const [copied, setCopied] = useState(false)
+  const [lastRemote, setLastRemote] = useState(0)
   const {
     constraints,
     onDeviceChange,
@@ -57,6 +62,22 @@ const Call = () => {
       clearTimeout(timer.current);
     };
   }, []);
+
+  useEffect(() => {
+    sendState()
+  }, [videoMute]);
+
+  useEffect(() => {
+    sendState()
+  }, [audioMute]);
+
+  useEffect(() => {
+    sendState()
+  }, [dcOpen]);
+
+  useEffect(() => {
+    sendState()
+  }, [lastRemote]);
 
   function onCopy() {
     if (timer.current) {
@@ -87,6 +108,21 @@ const Call = () => {
     }
   }, [hangup])
 
+  const processDCIncomingLocal = (data) => {
+    console.log('[processDCIncomingLocal] data=', data)
+    setLastRemote(Date.now())
+  }
+
+  const processDCIncomingRemote = (label ,data) => {
+    console.log('[processDCIncomingRemote] label, data=', label, data)
+  }
+
+  const sendState = () => {
+    if (dcLocal.current && dcLocal.current.readyState === 'open') {
+      console.log("sendState",audioMute,videoMute)
+      dcLocal.current.send(JSON.stringify({type: "mute", audioMute: audioMute, videoMute:videoMute}))
+    }
+  }
 
   const loadMedia = async () => {
     // HACK: dev use effect fires twice
@@ -179,6 +215,19 @@ const Call = () => {
 
       signalLocal.onopen = async () => {
         clientLocal.current.join(response.data.sid, response.data.uid);
+        dcLocal.current = clientLocal.current.createDataChannel(parsedSID.uid)
+        dcLocal.current.onopen = () => setDcOpen(true)
+        dcLocal.current.onmessage = ({ data }) => {
+          processDCIncomingLocal(data)
+        };
+
+        clientLocal.current.ondatachannel = ({ channel }) => {
+          console.log('[ondatachannel remote] channel=', channel)
+          channel.send(JSON.stringify({type: "connected", uid: parsedSID.uid}))
+          channel.onmessage = ({ data }) => {
+            processDCIncomingRemote(channel.label, data)
+          };
+        };
         publish()
       }
     } catch (errors) {
@@ -218,15 +267,19 @@ const Call = () => {
         if (!audioEnabled) {
           media.mute('audio')
           showMutedBadge('audio', media.id)
+          setAudioMute(true)
         } else {
           hideMutedBadge('audio', media.id)
+          setAudioMute(false)
         }
 
         if (!videoEnabled) {
           media.mute('video')
           showMutedBadge('video', media.id)
+          setVideoMute(true)
         } else {
           hideMutedBadge('video', media.id)
+          setVideoMute(false)
         }
       }, 0)
     })
@@ -244,9 +297,21 @@ const Call = () => {
     if (!!constraints[type]) {
       localMedia.current.mute(type)
       showMutedBadge(type, localMedia.current.id)
+      if (type=="audio") {
+        setAudioMute(true)
+      }
+      if (type=="video") {
+        setVideoMute(true)
+      }
     } else {
       localMedia.current.unmute(type)
       hideMutedBadge(type, localMedia.current.id)
+      if (type=="audio") {
+        setAudioMute(false)
+      }
+      if (type=="video") {
+        setVideoMute(false)
+      }
     }
     onMediaToggle(type)
   }
