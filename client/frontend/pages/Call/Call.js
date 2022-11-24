@@ -20,8 +20,10 @@ import {PackedGrid} from 'react-packed-grid';
 import {desktopConstraints, mobileConstraints} from './const';
 import * as e2ee from './e2ee'
 
+const useE2ee = false;
+
 const config = {
-  encodedInsertableStreams: true,
+  encodedInsertableStreams: useE2ee,
   iceServers: [
     {
       urls: 'stun:stun.l.google.com:19302',
@@ -204,10 +206,12 @@ const Call = () => {
 
       clientLocal.current.publish(media)
 
-      clientLocal.current.transports[0].pc.getSenders().forEach(e2ee.setupSenderTransform);
-      clientLocal.current.transports[1].pc.addEventListener('track', (e)=>{
-        e2ee.setupReceiverTransform(e.receiver);
-      });
+      if (useE2ee) {
+        clientLocal.current.transports[0].pc.getSenders().forEach(e2ee.setupSenderTransform);
+        clientLocal.current.transports[1].pc.addEventListener('track', (e)=>{
+          e2ee.setupReceiverTransform(e.receiver);
+        });
+      }
 
       setLoading(false)
 
