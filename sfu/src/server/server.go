@@ -129,14 +129,6 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 
 	switch req.Method {
 	case "join":
-		if p.Session() != nil {
-			if len(p.Session().Peers()) > 9 {
-				err := fmt.Errorf("too many participants")
-				p.Logger.Error(err, "connect: too many participants")
-				replyError(err)
-				break
-			}
-		}
 		var join Join
 		err := json.Unmarshal(*req.Params, &join)
 		if err != nil {
@@ -222,6 +214,15 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		if err != nil {
 			replyError(err)
 			break
+		}
+
+		if p.Session() != nil {
+			if len(p.Session().Peers()) > 9 {
+				err := fmt.Errorf("too many participants")
+				p.Logger.Error(err, "connect: too many participants")
+				replyError(err)
+				break
+			}
 		}
 
 		answer, err := p.Answer(join.Offer)
@@ -416,7 +417,7 @@ func createCall(callID string, clientID string, signb64 string, epoch uint64) er
 	}
 
 	var deposit types.Balance = types.NEARToYocto(0)
-	var gas types.Gas = 30000000000000
+	var gas types.Gas = 100000000000000
 
 	sign, err := base64.StdEncoding.DecodeString(signb64)
 	if err != nil {
@@ -474,7 +475,7 @@ func endCall(callID string, clientID string, signb64 string, epoch uint64, durat
 	}
 
 	var deposit types.Balance = types.NEARToYocto(0)
-	var gas types.Gas = 30000000000000
+	var gas types.Gas = 100000000000000
 
 	sign, err := base64.StdEncoding.DecodeString(signb64)
 	if err != nil {
