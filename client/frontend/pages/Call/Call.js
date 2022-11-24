@@ -220,7 +220,7 @@ const Call = () => {
 
         clientLocal.current.ondatachannel = ({channel}) => {
           console.log('[ondatachannel remote] channel=', channel)
-          channel.send(JSON.stringify({type: 'connected', uid: parsedUID}))
+          channel.onopen = () => channel.send(JSON.stringify({type: 'connected', uid: parsedUID}))
           channel.onmessage = ({data}) => {
             processDCIncomingRemote(channel.label, data)
           };
