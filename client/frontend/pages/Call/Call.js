@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {Header} from '../../components/Header/Header';
 import * as styles from './Call.module.scss'
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
@@ -12,7 +12,6 @@ import Footer from '../../components/Footer/Footer';
 import classNames from 'classnames';
 import ParticipantsBadge from '../../components/ParticipantsBadge/ParticipantsBadge';
 import {ChainIcon, WhiteTickIcon} from '../../assets';
-import {hideMutedBadge, showMutedBadge} from './utils';
 import CopyToClipboard from 'react-copy-to-clipboard/src';
 import Video from '../../components/Video/Video';
 import {PackedGrid} from 'react-packed-grid';
@@ -37,8 +36,6 @@ const Call = () => {
   const dcLocal = useRef()
   const [participants, setParticipants] = useState([])
   const [loading, setLoading] = useState(true)
-  const [audioMute, setAudioMute] = useState(false)
-  const [videoMute, setVideoMute] = useState(false)
   const [dcOpen, setDcOpen] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
   const [copied, setCopied] = useState(false)
@@ -55,7 +52,9 @@ const Call = () => {
   } = useMediaConstraints(location.state?.callState, location.state?.audioEnabled, location.state?.videoEnabled);
   const localMedia = useRef()
   const timer = useRef()
-  const streamRef = useRef({})
+  const streams = useRef({})
+  const [mediaState, setMediaState] = useState({})
+  const localUid = useRef()
 
   useEffect(() => {
     return () => {
@@ -65,19 +64,7 @@ const Call = () => {
 
   useEffect(() => {
     sendState()
-  }, [videoMute]);
-
-  useEffect(() => {
-    sendState()
-  }, [audioMute]);
-
-  useEffect(() => {
-    sendState()
-  }, [dcOpen]);
-
-  useEffect(() => {
-    sendState()
-  }, [lastRemote]);
+  }, [audioEnabled, videoEnabled, dcOpen, lastRemote]);
 
   function onCopy() {
     if (timer.current) {
@@ -93,7 +80,7 @@ const Call = () => {
 
   const hangup = useCallback(() => {
     if (clientLocal.current) {
-      clientLocal.current.signal.call("end", {})
+      clientLocal.current.signal.call('end', {})
       clientLocal.current.close();
       clientLocal.current = null
       navigate('/')
@@ -113,14 +100,24 @@ const Call = () => {
     setLastRemote(Date.now())
   }
 
-  const processDCIncomingRemote = (label ,data) => {
+  const processDCIncomingRemote = (label, data) => {
     console.log('[processDCIncomingRemote] label, data=', label, data)
+    const d = JSON.parse(data)
+    switch (d.type) {
+      case 'connected': {
+        return
+      }
+      case 'mute': {
+        setMediaState(prev => ({...prev, [label]: {audio: !d.audioMute, video: !d.videoMute}}))
+        return
+      }
+    }
   }
 
   const sendState = () => {
     if (dcLocal.current && dcLocal.current.readyState === 'open') {
-      console.log("sendState",audioMute,videoMute)
-      dcLocal.current.send(JSON.stringify({type: "mute", audioMute: audioMute, videoMute:videoMute}))
+      console.log('sendState', 'audio muted: ' + !audioEnabled, 'video muted: ' + !videoEnabled)
+      dcLocal.current.send(JSON.stringify({type: 'mute', audioMute: !audioEnabled, videoMute: !videoEnabled}))
     }
   }
 
@@ -149,11 +146,13 @@ const Call = () => {
         url = `https://nmeet.org/api/participant/join/${sid}/${name}`;
       }
       const response = await axios.post(url);
-      const parsedSID = JSON.parse(response.data.sid)
+      const parsedSID = JSON.parse(response.data.sid).sid
+      const parsedUID = JSON.parse(response.data.sid).uid
+      localUid.current = parsedUID
       console.log(`Created: `, response);
-      console.log(`Join: `, parsedSID.sid, parsedSID.uid);
+      console.log(`Join: `, parsedSID, parsedUID);
 
-      setInviteLink(window.location.origin + '/join/' + parsedSID.sid)
+      setInviteLink(window.location.origin + '/join/' + parsedSID)
 
       const signalLocal = new IonSFUJSONRPCSignal(response.data.url);
 
@@ -174,21 +173,7 @@ const Call = () => {
       clientLocal.current.ontrack = (track, stream) => {
         console.log('got track', track, 'for stream', stream);
 
-        track.onmute = (e) => {
-          console.log(e, stream.id, 'mute');
-          const type = e.srcElement.kind
-          showMutedBadge(type, stream.id)
-        }
-
-        track.onunmute = (e) => {
-          console.log(e, stream.id, 'onunmute');
-          setTimeout(() => {
-            const type = e.srcElement.kind
-            hideMutedBadge(type, stream.id)
-          }, 1000)
-        };
-
-        axios.get('https://nmeet.org/api/participants?sid=' + parsedSID.sid).then((response) => {
+        axios.get('https://nmeet.org/api/participants?sid=' + parsedSID).then((response) => {
           console.log('Users:', response.data)
           setParticipants(response.data.map(participant => !participant.streamID ? {
             ...participant,
@@ -197,34 +182,46 @@ const Call = () => {
         }).catch(console.error);
 
         // If the stream is not there in the streams map.
-        if (!streamRef.current[stream.id]) {
-          streamRef.current[stream.id] = stream
+        if (!streams.current[stream.id]) {
+          streams.current[stream.id] = stream
           setParticipants(prev => [...prev, {streamID: stream.id}])
         }
 
         stream.onremovetrack = () => {
+          console.log('[onremovetrack]', stream.id)
           try {
-            if (streamRef.current[stream.id]) {
-              delete streamRef.current[stream.id];
-              setParticipants(prev => prev.filter(participant => participant.streamID !== stream.id))
+            setParticipants(prev => {
+              const participant = prev.find(participant => participant.streamID === stream.id)
+              if (participant?.uid) {
+                setMediaState(prev => {
+                  const newState = {...prev}
+                  delete newState[participant.uid]
+                  return newState
+                })
+              }
+              return prev.filter(participant => participant.streamID !== stream.id)
+            })
+            if (streams.current[stream.id]) {
+              delete streams.current[stream.id]
             }
           } catch (err) {
+            console.error(err)
           }
         };
       };
 
       signalLocal.onopen = async () => {
         clientLocal.current.join(response.data.sid, response.data.uid);
-        dcLocal.current = clientLocal.current.createDataChannel(parsedSID.uid)
+        dcLocal.current = clientLocal.current.createDataChannel(parsedUID)
         dcLocal.current.onopen = () => setDcOpen(true)
-        dcLocal.current.onmessage = ({ data }) => {
+        dcLocal.current.onmessage = ({data}) => {
           processDCIncomingLocal(data)
         };
 
-        clientLocal.current.ondatachannel = ({ channel }) => {
+        clientLocal.current.ondatachannel = ({channel}) => {
           console.log('[ondatachannel remote] channel=', channel)
-          channel.send(JSON.stringify({type: "connected", uid: parsedSID.uid}))
-          channel.onmessage = ({ data }) => {
+          channel.send(JSON.stringify({type: 'connected', uid: parsedUID}))
+          channel.onmessage = ({data}) => {
             processDCIncomingRemote(channel.label, data)
           };
         };
@@ -254,34 +251,17 @@ const Call = () => {
         media.switchDevice('video', constraints.video.exact)
       }
 
-      streamRef.current = {[media.id]: media}
-      setParticipants([
-        {streamID: media.id, name},
-      ])
+      await clientLocal.current.publish(media)
 
-      clientLocal.current.publish(media)
-
+      streams.current[media.id] = media
+      setMediaState(prev => ({
+        ...prev, [localUid.current]: {
+          audio: audioEnabled,
+          video: videoEnabled
+        }
+      }))
+      setParticipants([{uid: localUid.current, streamID: media.id, name}]);
       setLoading(false)
-
-      setTimeout(() => {
-        if (!audioEnabled) {
-          media.mute('audio')
-          showMutedBadge('audio', media.id)
-          setAudioMute(true)
-        } else {
-          hideMutedBadge('audio', media.id)
-          setAudioMute(false)
-        }
-
-        if (!videoEnabled) {
-          media.mute('video')
-          showMutedBadge('video', media.id)
-          setVideoMute(true)
-        } else {
-          hideMutedBadge('video', media.id)
-          setVideoMute(false)
-        }
-      }, 0)
     })
       .catch(console.error);
   };
@@ -296,25 +276,19 @@ const Call = () => {
   const toggleMedia = (type) => {
     if (!!constraints[type]) {
       localMedia.current.mute(type)
-      showMutedBadge(type, localMedia.current.id)
-      if (type=="audio") {
-        setAudioMute(true)
-      }
-      if (type=="video") {
-        setVideoMute(true)
-      }
     } else {
       localMedia.current.unmute(type)
-      hideMutedBadge(type, localMedia.current.id)
-      if (type=="audio") {
-        setAudioMute(false)
-      }
-      if (type=="video") {
-        setVideoMute(false)
-      }
     }
     onMediaToggle(type)
+    setMediaState(prev => ({
+      ...prev,
+      [localUid.current]: {...prev[localUid.current], [type]: !prev[localUid.current][type]}
+    }))
   }
+
+  const participantsToRender = useMemo(() => {
+    return participants.filter(participant => Object.keys(mediaState).includes(participant.uid))
+  }, [participants, mediaState])
 
   return (
     <Box
@@ -355,7 +329,7 @@ const Call = () => {
             overflowY={participants.length === 1 ? 'initial' : 'auto'}
             justifyContent={'space-between'}
           >
-            {participants.map((participant, index) => (
+            {participantsToRender.map((participant, index) => (
               <Box
                 key={participant.streamID}
                 maxHeight={participants.length === 1 ? 'auto' : 'calc((100vh - 72px - 48px - 88px) / 2)'}
@@ -367,10 +341,10 @@ const Call = () => {
                 <Video
                   key={participant.streamID + index}
                   participant={participant}
-                  refs={streamRef.current}
+                  stream={streams.current[participant.streamID]}
                   muted={participant.streamID === localMedia.current.id}
                   name={participant.name}
-                  setParticipants={setParticipants}
+                  mediaState={mediaState[participant.uid]}
                 />
               </Box>
             ))}
@@ -380,16 +354,18 @@ const Call = () => {
             className={classNames(styles.videoContainer)}
             boxAspectRatio={656 / 376}
           >
-            {participants.map((participant, index) => (
-              <Video
-                key={participant.streamID + index}
-                participant={participant}
-                refs={streamRef.current}
-                muted={participant.streamID === localMedia.current.id}
-                name={participant.name}
-                setParticipants={setParticipants}
-              />
-            ))}
+            {participantsToRender.map((participant, index) => (
+                <Video
+                  key={participant.streamID + index}
+                  participant={participant}
+                  stream={streams.current[participant.streamID]}
+                  muted={participant.streamID === localMedia.current.id}
+                  name={participant.name}
+                  mediaState={mediaState[participant.uid]}
+                />
+
+              )
+            )}
           </PackedGrid>
         )}
 
