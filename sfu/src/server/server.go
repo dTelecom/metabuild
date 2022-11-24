@@ -221,6 +221,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 				err := fmt.Errorf("too many participants")
 				p.Logger.Error(err, "connect: too many participants")
 				replyError(err)
+				p.Close()
 				break
 			}
 		}
@@ -228,6 +229,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		answer, err := p.Answer(join.Offer)
 		if err != nil {
 			replyError(err)
+			p.Close()
 			break
 		}
 
@@ -311,12 +313,14 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		if err != nil {
 			p.Logger.Error(err, "connect: error parsing offer")
 			replyError(err)
+			p.Close()
 			break
 		}
 
 		answer, err := p.Answer(negotiation.Desc)
 		if err != nil {
 			replyError(err)
+			p.Close()
 			break
 		}
 		_ = conn.Reply(ctx, req.ID, answer)
@@ -327,12 +331,14 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		if err != nil {
 			p.Logger.Error(err, "connect: error parsing answer")
 			replyError(err)
+			p.Close()
 			break
 		}
 
 		err = p.SetRemoteDescription(negotiation.Desc)
 		if err != nil {
 			replyError(err)
+			p.Close()
 		}
 
 	case "trickle":
@@ -341,6 +347,7 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 		if err != nil {
 			p.Logger.Error(err, "connect: error parsing candidate")
 			replyError(err)
+			p.Close()
 			break
 		}
 
