@@ -352,7 +352,7 @@ const Call = () => {
         ) : (
           <PackedGrid
             className={classNames(styles.videoContainer)}
-            boxAspectRatio={656 / 376}
+            boxAspectRatio={656 / 496}
           >
             {participantsToRender.map((participant, index) => (
                 <Video
