@@ -13,6 +13,7 @@ import axios from 'axios';
 import ParticipantsBadge from '../../components/ParticipantsBadge/ParticipantsBadge';
 import {createVideoElement, hideMutedBadge, showMutedBadge} from '../Call/utils';
 import {useMediaConstraints} from '../../hooks/useMediaConstraints';
+import {LocalStream} from 'ion-sdk-js';
 
 const Home = ({isJoin}) => {
   const navigate = useNavigate()
@@ -64,7 +65,7 @@ const Home = ({isJoin}) => {
       }
 
       if (!videoContainer.current) {
-        setTimeout(loadMedia, 200)
+        setTimeout(() => loadMedia(config), 200)
       } else {
         localVideo.current = stream
         const video = createVideoElement({
@@ -189,7 +190,14 @@ const Home = ({isJoin}) => {
                 className={styles.buttonContainer}
               >
                 <Button
-                  onClick={() => navigate(isJoin ? '/call/' + sid : '/call', {state: {name, callState: constraintsState, audioEnabled, videoEnabled }})}
+                  onClick={() => navigate(isJoin ? '/call/' + sid : '/call', {
+                    state: {
+                      name,
+                      callState: constraintsState,
+                      audioEnabled,
+                      videoEnabled
+                    }
+                  })}
                   text={buttonText}
                   disabled={disabled}
                 />
