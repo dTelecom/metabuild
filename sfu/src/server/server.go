@@ -129,11 +129,13 @@ func (p *JSONSignal) Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonr
 
 	switch req.Method {
 	case "join":
-		if len(p.Session().Peers()) > 9 {
-			err := fmt.Errorf("too many participants")
-			p.Logger.Error(err, "connect: too many participants")
-			replyError(err)
-			break
+		if p.Session() != nil {
+			if len(p.Session().Peers()) > 9 {
+				err := fmt.Errorf("too many participants")
+				p.Logger.Error(err, "connect: too many participants")
+				replyError(err)
+				break
+			}
 		}
 		var join Join
 		err := json.Unmarshal(*req.Params, &join)
