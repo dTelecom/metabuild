@@ -13,7 +13,6 @@ import axios from 'axios';
 import ParticipantsBadge from '../../components/ParticipantsBadge/ParticipantsBadge';
 import {createVideoElement, hideMutedBadge, showMutedBadge} from '../Call/utils';
 import {useMediaConstraints} from '../../hooks/useMediaConstraints';
-import {LocalStream} from 'ion-sdk-js';
 
 const Home = ({isJoin}) => {
   const navigate = useNavigate()
