@@ -12,6 +12,7 @@ import Footer from '../../components/Footer/Footer';
 import axios from 'axios';
 import ParticipantsBadge from '../../components/ParticipantsBadge/ParticipantsBadge';
 import {createVideoElement, hideMutedBadge, showMutedBadge} from '../Call/utils';
+import {useMediaConstraints} from '../../hooks/useMediaConstraints';
 
 const Home = ({isJoin}) => {
   const navigate = useNavigate()
@@ -19,9 +20,16 @@ const Home = ({isJoin}) => {
   const [hasVideo, setHasVideo] = useState(false)
   const [devices, setDevices] = useState([])
   const [participants, setParticipants] = useState()
-  const [callState, setCallState] = useState(
-    {audio: true, video: true}
-  );
+  const {
+    constraints,
+    onDeviceChange,
+    onMediaToggle,
+    audioEnabled,
+    videoEnabled,
+    selectedAudioId,
+    selectedVideoId,
+    constraintsState,
+  } = useMediaConstraints();
   const {sid} = useParams();
   const videoContainer = useRef()
   const localVideo = useRef()
@@ -31,7 +39,7 @@ const Home = ({isJoin}) => {
       void loadParticipants()
     }
 
-    void loadMedia(callState)
+    void loadMedia(constraints)
   }, [])
 
   const loadParticipants = async () => {
@@ -41,37 +49,37 @@ const Home = ({isJoin}) => {
   }
 
   const loadMedia = async (config) => {
+    console.log('loadMedia', config);
     try {
       const stream = await navigator.mediaDevices.getUserMedia(config);
       void loadDevices()
 
-      stream.getTracks().forEach(track => {
-          const constraint = {exact: track.getSettings().deviceId}
-          if (track.kind === 'audio') {
-            setCallState(prev => ({...prev, audio: constraint}))
+      if (!selectedVideoId && !selectedAudioId) {
+        // set initial devices
+        stream.getTracks().forEach(track => {
+            const deviceId = track.getSettings().deviceId
+            onDeviceChange(track.kind, deviceId)
           }
-          if (track.kind === 'video') {
-            setCallState(prev => ({...prev, video: constraint}))
-          }
-        }
-      )
+        )
+      }
 
       if (!videoContainer.current) {
-        setTimeout(loadMedia, 200)
+        setTimeout(() => loadMedia(config), 200)
       } else {
         localVideo.current = stream
         const video = createVideoElement({
           media: stream,
           muted: true,
           hideBadge: true,
-          style: {width: '100%', height: '100%'}
+          style: {width: '100%', height: '100%'},
+          audio: !!config.audio,
+          video: !!config.video,
         })
 
         videoContainer.current.innerHTML = ''
         videoContainer.current.appendChild(video)
+        setHasVideo(true)
       }
-
-      setHasVideo(true)
     } catch
       (err) {
       console.error(err)
@@ -88,39 +96,43 @@ const Home = ({isJoin}) => {
       });
   }
 
-  const onDeviceChange = useCallback((type, deviceId) => {
-    const constraint = {deviceId: {exact: deviceId}}
-    if (type === 'audio') {
-      void loadMedia({...callState, video: callState.video || true, audio: constraint})
-    }
-    if (type === 'video') {
-      void loadMedia({...callState, audio: callState.audio || true, video: constraint})
-    }
-  }, [callState])
+  const onDeviceSelect = useCallback((type, deviceId) => {
+    const constraints = onDeviceChange(type, deviceId)
+    void loadMedia(constraints)
+  }, [constraints])
 
   function toggleAudio() {
     if (localVideo.current) {
-      const state = callState.audio
-      localVideo.current.getAudioTracks()[0].enabled = !state;
-      if (!state) {
+      const track = localVideo.current.getAudioTracks()[0]
+      if (!track) {
+        onDeviceSelect('audio', true)
+        return
+      }
+      track.enabled = !audioEnabled;
+      if (!audioEnabled) {
         hideMutedBadge('audio', localVideo.current.id)
       } else {
         showMutedBadge('audio', localVideo.current.id)
       }
-      setCallState(prev => ({...prev, audio: !state}))
+      onMediaToggle('audio')
     }
   }
 
   function toggleVideo() {
     if (localVideo.current) {
-      const state = callState.video
-      localVideo.current.getVideoTracks()[0].enabled = !state;
-      if (!state) {
+      const prevState = videoEnabled
+      const track = localVideo.current.getVideoTracks()[0]
+      if (!track) {
+        onDeviceSelect('video', true)
+        return
+      }
+      track.enabled = !prevState;
+      if (!prevState) {
         hideMutedBadge('video', localVideo.current.id)
       } else {
         showMutedBadge('video', localVideo.current.id)
       }
-      setCallState(prev => ({...prev, video: !state}))
+      onMediaToggle('video')
     }
   }
 
@@ -146,13 +158,13 @@ const Home = ({isJoin}) => {
             <div className={styles.videoControls}>
               <VideoControls
                 devices={devices}
-                videoEnabled={callState.video}
-                audioEnabled={callState.audio}
-                onDeviceChange={onDeviceChange}
+                videoEnabled={videoEnabled}
+                audioEnabled={audioEnabled}
+                onDeviceChange={onDeviceSelect}
                 toggleAudio={toggleAudio}
                 toggleVideo={toggleVideo}
-                selectedVideoId={callState.video.exact}
-                selectedAudioId={callState.audio.exact}
+                selectedVideoId={selectedVideoId}
+                selectedAudioId={selectedAudioId}
               />
             </div>
           </div>
@@ -177,7 +189,14 @@ const Home = ({isJoin}) => {
                 className={styles.buttonContainer}
               >
                 <Button
-                  onClick={() => navigate(isJoin ? '/call/' + sid : '/call', {state: {name, callState}})}
+                  onClick={() => navigate(isJoin ? '/call/' + sid : '/call', {
+                    state: {
+                      name,
+                      callState: constraintsState,
+                      audioEnabled,
+                      videoEnabled
+                    }
+                  })}
                   text={buttonText}
                   disabled={disabled}
                 />

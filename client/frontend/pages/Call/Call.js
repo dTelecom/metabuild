@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react'
+import React, {useCallback, useEffect, useRef, useState} from 'react'
 import {Header} from '../../components/Header/Header';
 import * as styles from './Call.module.scss'
 import {useLocation, useNavigate, useParams} from 'react-router-dom';
@@ -12,12 +12,12 @@ import Footer from '../../components/Footer/Footer';
 import classNames from 'classnames';
 import ParticipantsBadge from '../../components/ParticipantsBadge/ParticipantsBadge';
 import {ChainIcon, WhiteTickIcon} from '../../assets';
-import {hideMutedBadge, showMutedBadge, useBreakpoints} from './utils';
+import {hideMutedBadge, showMutedBadge} from './utils';
 import CopyToClipboard from 'react-copy-to-clipboard/src';
-import {exact} from 'prop-types';
 import Video from '../../components/Video/Video';
 import {PackedGrid} from 'react-packed-grid';
-import {desktopConstraints, mobileConstraints} from './const';
+import {useBreakpoints} from '../../hooks/useBreakpoints';
+import {useMediaConstraints} from '../../hooks/useMediaConstraints';
 
 const config = {
   iceServers: [
@@ -38,7 +38,16 @@ const Call = () => {
   const [loading, setLoading] = useState(true)
   const [inviteLink, setInviteLink] = useState('')
   const [copied, setCopied] = useState(false)
-  const [callState, setCallState] = useState(location.state?.callState || {audio: true, video: true})
+  const {
+    constraints,
+    onDeviceChange,
+    onMediaToggle,
+    audioEnabled,
+    videoEnabled,
+    selectedAudioId,
+    selectedVideoId,
+    defaultConstraints
+  } = useMediaConstraints(location.state?.callState, location.state?.audioEnabled, location.state?.videoEnabled);
   const localMedia = useRef()
   const timer = useRef()
   const streamRef = useRef({})
@@ -57,7 +66,7 @@ const Call = () => {
     timer.current = setTimeout(() => setCopied(false), 2000);
   }
 
-  const name = (location.state?.name || (Math.random() + 1).toString(36).substring(7)) + (!sid ? '(Host)' : '');
+  const name = (location.state?.name || (Math.random() + 1).toString(36).substring(7)) + (!sid ? ' (Host)' : '');
 
   const started = useRef(false)
 
@@ -84,7 +93,6 @@ const Call = () => {
     if (started.current === true) return
     started.current = true
 
-
     await start()
   }
 
@@ -97,6 +105,7 @@ const Call = () => {
         console.error(`${err.name}: ${err.message}`);
       });
   }
+
   const start = async () => {
     try {
       let url = `https://nmeet.org/api/participant/create/${name}`;
@@ -137,8 +146,10 @@ const Call = () => {
 
         track.onunmute = (e) => {
           console.log(e, stream.id, 'onunmute');
-          const type = e.srcElement.kind
-          hideMutedBadge(type, stream.id)
+          setTimeout(() => {
+            const type = e.srcElement.kind
+            hideMutedBadge(type, stream.id)
+          }, 1000)
         };
 
         axios.get('https://nmeet.org/api/participants?sid=' + parsedSID.sid).then((response) => {
@@ -179,19 +190,19 @@ const Call = () => {
     LocalStream.getUserMedia({
       resolution: 'vga',
       audio: true,
-      video: isMobile ? mobileConstraints : desktopConstraints,
+      video: constraints.video || defaultConstraints.video,
       // codec: params.has('codec') ? params.get('codec') : 'vp8',
       codec: 'vp8',
       sendEmptyOnMute: false,
     }).then(async (media) => {
       loadDevices()
       localMedia.current = media
-      if (callState.audio?.exact) {
-        media.switchDevice('audio', callState.audio.exact)
+      if (constraints.audio?.exact) {
+        media.switchDevice('audio', constraints.audio?.exact)
       }
 
-      if (callState.video?.exact) {
-        media.switchDevice('video', callState.video.exact)
+      if (constraints.video?.exact) {
+        media.switchDevice('video', constraints.video.exact)
       }
 
       streamRef.current = {[media.id]: media}
@@ -204,15 +215,14 @@ const Call = () => {
       setLoading(false)
 
       setTimeout(() => {
-        if (callState.audio === false) {
+        if (!audioEnabled) {
           media.mute('audio')
-          console.log('mute')
           showMutedBadge('audio', media.id)
         } else {
           hideMutedBadge('audio', media.id)
         }
 
-        if (callState.video === false) {
+        if (!videoEnabled) {
           media.mute('video')
           showMutedBadge('video', media.id)
         } else {
@@ -223,24 +233,23 @@ const Call = () => {
       .catch(console.error);
   };
 
-  const onDeviceChange = useCallback((type, deviceId) => {
+  const onDeviceSelect = useCallback((type, deviceId) => {
     if (!localMedia.current) return
 
     localMedia.current.switchDevice(type, deviceId)
-    setCallState(prev => ({...prev, [type]: {exact: deviceId}}))
+    onDeviceChange(type, deviceId)
   }, [])
 
-  const toggleMedia = useCallback((type) => {
-    if (!!callState[type]) {
+  const toggleMedia = (type) => {
+    if (!!constraints[type]) {
       localMedia.current.mute(type)
       showMutedBadge(type, localMedia.current.id)
-      setCallState(prev => ({...prev, [type]: false}))
     } else {
       localMedia.current.unmute(type)
       hideMutedBadge(type, localMedia.current.id)
-      setCallState(prev => ({...prev, [type]: true}))
     }
-  }, [callState])
+    onMediaToggle(type)
+  }
 
   return (
     <Box
@@ -257,7 +266,10 @@ const Call = () => {
             text={inviteLink}
           >
             <button className={styles.inviteButton}>
-              <img src={copied ? WhiteTickIcon : ChainIcon}/>
+              <img
+                src={copied ? WhiteTickIcon : ChainIcon}
+                alt={'copy icon'}
+              />
               {copied ? 'Copied!' : 'Copy invite link'}
             </button>
           </CopyToClipboard>
@@ -284,7 +296,7 @@ const Call = () => {
                 maxHeight={participants.length === 1 ? 'auto' : 'calc((100vh - 72px - 48px - 88px) / 2)'}
                 width={participants.length === 1 ? '100%' : 'calc(50% - 8px)'}
                 style={{
-                  aspectRatio: 480 / 640
+                  aspectRatio: 360 / 640
                 }}
               >
                 <Video
@@ -301,7 +313,7 @@ const Call = () => {
         ) : (
           <PackedGrid
             className={classNames(styles.videoContainer)}
-            boxAspectRatio={isMobile ? 480 / 640 : 640 / 480}
+            boxAspectRatio={656 / 376}
           >
             {participants.map((participant, index) => (
               <Video
@@ -322,11 +334,11 @@ const Call = () => {
             <VideoControls
               devices={devices}
               onHangUp={hangup}
-              videoEnabled={!!callState.video}
-              audioEnabled={!!callState.audio}
-              onDeviceChange={onDeviceChange}
-              selectedAudioId={callState.audio?.exact}
-              selectedVideoId={callState.video?.exact}
+              videoEnabled={videoEnabled}
+              audioEnabled={audioEnabled}
+              onDeviceChange={onDeviceSelect}
+              selectedAudioId={selectedAudioId}
+              selectedVideoId={selectedVideoId}
               toggleAudio={() => toggleMedia('audio')}
               toggleVideo={() => toggleMedia('video')}
               participantsCount={participants.length}

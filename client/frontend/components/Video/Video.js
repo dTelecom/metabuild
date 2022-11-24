@@ -1,8 +1,9 @@
 import React, {useEffect, useRef} from 'react';
-import {createCallControl, useBreakpoints} from '../../pages/Call/utils';
+import {createCallControl} from '../../pages/Call/utils';
 import * as styles from '../../pages/Call/Call.module.scss';
 import {SignalIcon, VideoPlaceholder} from '../../assets';
 import {Box} from '@chakra-ui/react';
+import {useBreakpoints} from '../../hooks/useBreakpoints';
 
 const Video = ({participant, setParticipants, refs, muted, name}) => {
   const container = useRef()
@@ -23,12 +24,11 @@ const Video = ({participant, setParticipants, refs, muted, name}) => {
         placeholder.className = styles.streamPlaceholder
         container.current.appendChild(placeholder)
 
-        const callControls = createCallControl(stream.id)
+        const callControls = createCallControl(stream.id, true, true)
         container.current.appendChild(callControls)
       }
     }
   }, [])
-
 
   return (
     <Box
