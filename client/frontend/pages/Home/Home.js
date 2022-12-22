@@ -75,6 +75,7 @@ const Home = ({isJoin}) => {
           audio: !!config.audio,
           video: !!config.video,
         })
+        video.style.transform = 'scale(-1, 1)';
 
         videoContainer.current.innerHTML = ''
         videoContainer.current.appendChild(video)

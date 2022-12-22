@@ -343,6 +343,7 @@ const Call = () => {
                   participant={participant}
                   stream={streams.current[participant.streamID]}
                   muted={participant.streamID === localMedia.current.id}
+                  isCurrentUser={participant.streamID === localMedia.current.id}
                   name={participant.name}
                   mediaState={mediaState[participant.uid]}
                 />
@@ -360,6 +361,7 @@ const Call = () => {
                   participant={participant}
                   stream={streams.current[participant.streamID]}
                   muted={participant.streamID === localMedia.current.id}
+                  isCurrentUser={participant.streamID === localMedia.current.id}
                   name={participant.name}
                   mediaState={mediaState[participant.uid]}
                 />
