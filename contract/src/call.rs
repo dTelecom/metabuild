@@ -63,7 +63,7 @@ impl Contract {
 
         self.active_calls.insert(&id, &call);
 
-        node.unstaked_available_epoch_height += 3;
+        node.unstaked_available_epoch_height = env::epoch_height() + 3;
         self.nodes.insert(&env::predecessor_account_id(), &node);
 
         self.total_conferences = self.total_conferences + 1;

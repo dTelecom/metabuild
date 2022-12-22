@@ -254,10 +254,10 @@ mod tests {
 
         assert_eq!(node.earned_amount, 485_000_000_000_000_000_000_00);
 
-        set_context("mainer_a", 0 * NEAR, 4);
+        set_context("mainer_a", 0 * NEAR, 5);
         contract.remove_node();
 
-        set_context("client_a", 0 * NEAR, 4);
+        set_context("client_a", 0 * NEAR, 5);
         contract.withdraw_balance();
     }
 
