@@ -25,9 +25,6 @@ pub const STORAGE_COST: u128 = 1_000_000_000_000_000_000_000;
 // 0.001 NEAR ~ 0.002 USD
 pub const MINUTE_PRICE: u128 = 1_000_000_000_000_000_000_000;
 
-// 0.003 NEAR
-pub const GAS_COST: u128 = 3_000_000_000_000_000_000_000;
-
 // 10 NEAR
 pub const STAKE_AMOUNT: u128 = 10_000_000_000_000_000_000_000_000;
 
@@ -245,14 +242,14 @@ mod tests {
         let calls2 = contract.get_active_calls();
         assert_eq!(calls2.len(), 0);
 
-        assert_eq!(contract.balance, 485_000_000_000_000_000_000_00);
+        assert_eq!(contract.balance, 500_000_000_000_000_000_000_00);
 
         let client = contract.get_client("client_a".parse().unwrap()).unwrap();
         assert_eq!(client.deposited_amount, 8_990_000_000_000_000_000_000_00);
 
         let node = contract.get_node("mainer_a".parse().unwrap()).unwrap();
 
-        assert_eq!(node.earned_amount, 485_000_000_000_000_000_000_00);
+        assert_eq!(node.earned_amount, 500_000_000_000_000_000_000_00);
 
         set_context("mainer_a", 0 * NEAR, 5);
         contract.remove_node();

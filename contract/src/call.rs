@@ -76,7 +76,7 @@ impl Contract {
         minutes: u128,
         epoch: EpochHeight,
         sign: String,
-    ) -> Promise {
+    ) {
         let signature =
             ed25519_dalek::Signature::from_bytes(&bs58::decode(sign).into_vec().unwrap()).unwrap();
 
@@ -114,15 +114,13 @@ impl Contract {
 
         client.deposited_amount = client.deposited_amount - to_spent;
 
-        let to_return: u128 = if to_spent >= GAS_COST { GAS_COST } else { 0 };
-
         self.clients.insert(&call.client_id, &client);
         self.active_calls.remove(&id);
 
         self.total_minutes = self.total_minutes + minutes;
-        self.total_earned = self.total_earned + to_spent - to_return;
+        self.total_earned = self.total_earned + to_spent;
 
-        let earned = to_spent - to_return;
+        let earned = to_spent;
         call.earned = earned;
 
         if earned > 0 {
@@ -148,8 +146,6 @@ impl Contract {
         }
 
         self.prev_storage_key = store_key;
-
-        Promise::new(env::predecessor_account_id()).transfer(to_return)
     }
 
     pub fn end_active_call(&mut self, id: String, fine: Balance) {
