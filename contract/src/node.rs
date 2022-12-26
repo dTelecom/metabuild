@@ -8,6 +8,8 @@ pub struct Node {
     pub earned_amount: Balance,
     pub active: bool,
     pub unstaked_available_epoch_height: EpochHeight,
+    pub pk: PublicKey,
+    pub node_id: AccountId,
 }
 
 #[near_bindgen]
@@ -37,6 +39,8 @@ impl Contract {
             earned_amount: 0,
             active: true,
             unstaked_available_epoch_height: 0,
+            pk: env::signer_account_pk(),
+            node_id: env::predecessor_account_id(),
         };
 
         self.nodes.insert(&env::predecessor_account_id(), &node);
